@@ -9,7 +9,7 @@ def main():
     for event in events:
         event.update(normalize_date(event["date_text"]))
 
-    inserted = insert_events(events)
+    result = insert_events(events)
 
     for number, event in enumerate(events, start=1):
         print(f"{number}. {event['title']}")
@@ -20,7 +20,8 @@ def main():
         print(f"   Bron: {event['source']}\n")
 
     print(f"Aantal evenementen: {len(events)}")
-    print(f"Aantal ingevoegde evenementen: {inserted}")
+    print(f"Nieuwe evenementen: {result['inserted']}")
+    print(f"Overgeslagen duplicaten: {result['skipped']}")
 
 
 if __name__ == "__main__":

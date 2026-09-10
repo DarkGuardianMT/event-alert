@@ -25,9 +25,15 @@ def get_connection():
 
 
 def insert_events(events):
+    result = {"inserted": 0, "skipped": 0}
     if not events:
-        return 0
+        return result
 
+    duplicate_query = """
+        SELECT id FROM events
+        WHERE title = %s AND start_date <=> %s AND city <=> %s
+        LIMIT 1
+    """
     query = """
         INSERT INTO events
             (title, date_text, start_date, end_date, location, city, source, source_url)
@@ -51,11 +57,18 @@ def insert_events(events):
     with closing(get_connection()) as connection:
         try:
             with closing(connection.cursor()) as cursor:
-                cursor.executemany(query, values)
-                inserted = cursor.rowcount
+                for value in values:
+                    # <=> vergelijkt ook ontbrekende datums en steden veilig.
+                    cursor.execute(duplicate_query, (value[0], value[2], value[5]))
+                    if cursor.fetchone() is not None:
+                        result["skipped"] += 1
+                        continue
+
+                    cursor.execute(query, value)
+                    result["inserted"] += cursor.rowcount
             connection.commit()
         except mysql.connector.Error:
             connection.rollback()
             raise
 
-    return inserted
+    return result
