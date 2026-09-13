@@ -21,17 +21,33 @@ The first version prioritizes:
 
 Large concerts, stadium events, and large ticketing platforms are not a priority for version 1.
 
-## Technical direction
+## Active sources and collection
 
-- Event data may come from APIs as well as regular websites without APIs.
-- Python will collect and scrape event data.
-- PHP and MySQL will power the website and data storage.
-- AI may later help extract structured event data from unstructured articles, but it is not part of the first scraper.
+Verified local collection on 2026-09-13:
 
-## Initial plan
+- Gemeente Gouda evenementenkalender: 46 events.
+- Cultuurhuis Garenspinnerij: 17 events after source-level duplicate removal.
+- Combined: 63 fetched events and 62 unique rows stored in the local MySQL database.
 
-- First planned source: Gemeente Gouda evenementenkalender.
-- First milestone: scrape events from one source and print normalized event data in the terminal.
-- No database integration yet.
-- No frontend implementation yet.
-- No scheduler or cron setup yet.
+These counts are a snapshot and may change as the source calendars are updated.
+
+## Current architecture
+
+- Python source modules in `scraper/sources/` collect raw events using requests and BeautifulSoup.
+- `scraper/collector.py` calls the source modules and combines their events.
+- `scraper/normalizer.py` normalizes Dutch date text into `start_date` and `end_date`, preserving the original `date_text`.
+- `scraper/database.py` implements MySQL connections, inserts, and duplicate checks using `mysql-connector-python`.
+- Duplicate matching uses `title`, `start_date`, and `city`; matching events are skipped.
+- `scraper/main.py` collects, normalizes, stores events, and reports fetched, inserted, and skipped counts.
+- `database/schema.sql` defines the initial `events` table.
+- Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
+
+## Not implemented yet
+
+- PHP frontend.
+- Scheduler or cron.
+- AI extraction.
+
+## Next planned step
+
+Add a third Gouda community-event source.
