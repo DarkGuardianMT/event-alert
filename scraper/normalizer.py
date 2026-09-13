@@ -19,7 +19,7 @@ MONTHS = {
 }
 DATE_PATTERN = (
     r"(?:(?:maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\s+)?"
-    r"(\d{1,2})\s+(" + "|".join(MONTHS) + r")"
+    r"(\d{1,2})\s+(" + "|".join(MONTHS) + r")(?:\s+(\d{4}))?"
 )
 
 
@@ -41,9 +41,10 @@ def normalize_date(date_text):
 
             day = int(match.group(1))
             month = MONTHS[match.group(2)]
-            year = EVENT_YEAR
+            explicit_year = match.group(3)
+            year = int(explicit_year) if explicit_year else (dates[0].year if dates else EVENT_YEAR)
             # Een periode van december naar januari eindigt in het volgende jaar.
-            if dates and month < dates[0].month:
+            if not explicit_year and dates and month < dates[0].month:
                 year += 1
             dates.append(date(year, month, day))
     except ValueError:

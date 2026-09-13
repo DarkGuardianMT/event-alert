@@ -1,11 +1,14 @@
 from database import insert_events
 from normalizer import normalize_date
-from sources.gemeente_gouda import fetch_events
+from sources.gemeente_gouda import fetch_events as fetch_gouda_events
+from sources.garenspinnerij import fetch_events as fetch_garenspinnerij_events
 
 
 def main():
     print("Event Alert scraper gestart.\n")
-    events = fetch_events()
+    gouda_events = fetch_gouda_events()
+    garenspinnerij_events = fetch_garenspinnerij_events()
+    events = gouda_events + garenspinnerij_events
     for event in events:
         event.update(normalize_date(event["date_text"]))
 
@@ -19,6 +22,8 @@ def main():
         print(f"   Locatie: {event['location']}")
         print(f"   Bron: {event['source']}\n")
 
+    print(f"Gemeente Gouda: {len(gouda_events)}")
+    print(f"Cultuurhuis Garenspinnerij: {len(garenspinnerij_events)}")
     print(f"Aantal evenementen: {len(events)}")
     print(f"Nieuwe evenementen: {result['inserted']}")
     print(f"Overgeslagen duplicaten: {result['skipped']}")
