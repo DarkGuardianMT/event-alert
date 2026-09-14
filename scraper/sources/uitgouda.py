@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import date
 from urllib.parse import urljoin, urldefrag
 
@@ -11,6 +12,7 @@ MONTHS = (
     "januari", "februari", "maart", "april", "mei", "juni",
     "juli", "augustus", "september", "oktober", "november", "december",
 )
+KNOWN_CITIES = ("Gouda", "Waddinxveen", "Bodegraven", "Haastrecht", "Reeuwijk")
 
 
 def _event_nodes(value):
@@ -49,6 +51,27 @@ def _date_text(value):
     # Behoud de lokale kalenderdatum uit de bron, zonder tijdzoneconversie.
     parsed = date.fromisoformat(value.split("T", 1)[0])
     return parsed, f"{parsed.day} {MONTHS[parsed.month - 1]} {parsed.year}"
+
+
+def _city(event_data):
+    location = event_data.get("location") or {}
+    if not isinstance(location, dict):
+        return ""
+
+    address = location.get("address") or {}
+    address_text = " ".join(
+        str(value) for key, value in address.items()
+        if key != "addressLocality" and isinstance(value, str)
+    ) if isinstance(address, dict) else str(address)
+    location_text = f"{location.get('name', '')} {address_text}"
+
+    # Een expliciete plaats in het locatieadres gaat voor foutieve bronmetadata.
+    for city in KNOWN_CITIES:
+        if re.search(rf"\b{re.escape(city)}\b", location_text, re.IGNORECASE):
+            return city
+
+    locality = address.get("addressLocality", "") if isinstance(address, dict) else ""
+    return locality.strip() if isinstance(locality, str) else ""
 
 
 def fetch_events(stats=None):
@@ -102,7 +125,7 @@ def fetch_events(stats=None):
                 "title": title_element.get_text(" ", strip=True),
                 "date_text": start_text if start == end else f"{start_text} – {end_text}",
                 "location": location or "",
-                "city": "Gouda",
+                "city": _city(event_data),
                 "source": "UitGouda",
                 "source_url": url,
             }
