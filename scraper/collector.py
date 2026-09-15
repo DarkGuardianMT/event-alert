@@ -3,6 +3,7 @@ from sources.garenspinnerij import fetch_events as fetch_garenspinnerij_events
 from sources.uitgouda import fetch_events as fetch_uitgouda_events
 from sources.volksuniversiteit_gouda import fetch_events as fetch_volksuniversiteit_events
 from sources.sportpunt_gouda import fetch_events as fetch_sportpunt_events
+from sources.chocoladefabriek import fetch_events as fetch_chocoladefabriek_events
 
 
 def collect_events():
@@ -11,4 +12,5 @@ def collect_events():
     events.extend(fetch_uitgouda_events())
     events.extend(fetch_volksuniversiteit_events())
     events.extend(fetch_sportpunt_events())
+    events.extend(fetch_chocoladefabriek_events())
     return events
