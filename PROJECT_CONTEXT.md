@@ -43,7 +43,9 @@ These counts are a snapshot and may change as the source calendars are updated.
 - `scraper/main.py` collects by source, normalizes dates, syncs lifecycle state, and reports source failures and suspicious results.
 - `database/schema.sql` defines the `events` table; `database/migrations/001_event_lifecycle.sql` adds the lifecycle fields to existing databases.
 - `api/events/index.php` exposes active events as JSON at `GET /api/events/`, with optional exact-city and inclusive `from`/`to` date filters. Results are ordered by start date and title; invalid date filters return HTTP 400. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
+- `api/event/index.php` exposes one active event by numeric ID at `GET /api/event/?id={id}`. Invalid IDs return HTTP 400; missing and inactive events return HTTP 404.
 - `frontend/` contains the first HTML/CSS/vanilla JavaScript browsing interface. It loads event cards and city options from the PHP API, uses the API for city/date filters, and applies title/location search locally. Interface text and displayed dates switch between Dutch (default) and English; the choice is stored under `event-alert-language` in localStorage. Event titles, source names, and city names remain as supplied by the API.
+- Each event card opens `frontend/event.html?id={id}` in the same tab. The detail page loads the single-event API, shows its original source link, and shares the list's date formatting and language preference through `frontend/js/common.js`.
 - Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
 
 ## Not implemented yet

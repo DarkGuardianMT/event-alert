@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bekijk een lokaal evenement bij Event Alert.">
+  <title>Evenement bekijken — Event Alert</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/common.js" defer></script>
+  <script src="js/event.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./" aria-label="Event Alert startpagina" data-i18n-aria-label="brandLabel">Event <span>Alert</span></a>
+      <div class="header-actions">
+        <nav aria-label="Hoofdnavigatie" data-i18n-aria-label="navLabel">
+          <a class="nav-link" href="./#events" data-i18n="nav">Evenementen</a>
+        </nav>
+        <div class="language-switch" role="group" aria-label="Taal / Language">
+          <button type="button" class="language-button" data-language="nl" aria-pressed="true">NL</button>
+          <button type="button" class="language-button" data-language="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container detail-page">
+    <a class="back-link" href="./#events"><span aria-hidden="true">←</span> <span data-i18n="back">Terug naar evenementen</span></a>
+
+    <section id="detail-status" class="state-panel detail-status" role="status" aria-live="polite">
+      <h1 id="detail-status-title">Evenement laden...</h1>
+      <p id="detail-status-message">Even geduld, we halen het evenement op.</p>
+    </section>
+
+    <article id="event-detail" class="detail-card" aria-labelledby="detail-title" hidden>
+      <p class="detail-kicker" data-i18n="eventKicker">Lokaal evenement</p>
+      <time id="detail-date" class="event-date"></time>
+      <h1 id="detail-title"></h1>
+
+      <dl class="detail-facts">
+        <div>
+          <dt data-i18n="cityLabel">Plaats</dt>
+          <dd id="detail-city"></dd>
+        </div>
+        <div>
+          <dt data-i18n="locationLabel">Locatie</dt>
+          <dd id="detail-location"></dd>
+        </div>
+        <div>
+          <dt data-i18n="sourceLabel">Bron</dt>
+          <dd id="detail-source"></dd>
+        </div>
+      </dl>
+
+      <div class="detail-footer">
+        <a id="original-source" class="button button-primary source-button" href="#" target="_blank" rel="noopener noreferrer" aria-label="Bekijk originele bron (opent in een nieuw tabblad)" data-i18n-aria-label="sourceLinkLabel"><span data-i18n="originalSource">Bekijk originele bron</span> <span aria-hidden="true">↗</span></a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-brand">Event Alert</p>
+      <p data-i18n="footerTagline">Lokale evenementen op één plek.</p>
+      <p class="footer-note" data-i18n="footerNote">Gegevens komen uit openbare evenementbronnen.</p>
+    </div>
+  </footer>
+</body>
+</html>

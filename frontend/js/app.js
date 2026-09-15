@@ -10,12 +10,7 @@ const statusPanel = document.getElementById('event-status');
 const statusTitle = document.getElementById('status-title');
 const statusMessage = document.getElementById('status-message');
 const languageButtons = [...document.querySelectorAll('[data-language]')];
-const metaDescription = document.querySelector('meta[name="description"]');
-const languageStorageKey = 'event-alert-language';
-const monthFormatters = {
-  nl: new Intl.DateTimeFormat('nl-NL', { month: 'short', timeZone: 'UTC' }),
-  en: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }),
-};
+const ui = window.EventAlertUI;
 
 const translations = {
   nl: {
@@ -44,7 +39,6 @@ const translations = {
     eventSingular: 'evenement',
     eventPlural: 'evenementen',
     viewEvent: 'Bekijk evenement',
-    opensNewTab: 'opent in een nieuw tabblad',
     missingLocation: 'Locatie beschikbaar op evenementpagina',
     missingDate: 'Datum nog niet bekend',
     missingTitle: 'Evenement zonder titel',
@@ -83,7 +77,6 @@ const translations = {
     eventSingular: 'event',
     eventPlural: 'events',
     viewEvent: 'View event',
-    opensNewTab: 'opens in a new tab',
     missingLocation: 'Location available on event page',
     missingDate: 'Date to be confirmed',
     missingTitle: 'Untitled event',
@@ -116,30 +109,11 @@ function setLanguage(language, persist = true) {
     return;
   }
   currentLanguage = language;
-  document.documentElement.lang = language;
   const text = translations[language];
-
-  document.querySelectorAll('[data-i18n]').forEach((element) => {
-    element.textContent = text[element.dataset.i18n];
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
-    element.placeholder = text[element.dataset.i18nPlaceholder];
-  });
-  document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
-    element.setAttribute('aria-label', text[element.dataset.i18nAriaLabel]);
-  });
-  document.title = text.pageTitle;
-  metaDescription.content = text.pageDescription;
-  languageButtons.forEach((button) => {
-    button.setAttribute('aria-pressed', String(button.dataset.language === language));
-  });
+  ui.applyTranslations(language, text);
 
   if (persist) {
-    try {
-      window.localStorage.setItem(languageStorageKey, language);
-    } catch {
-      // De interface blijft werken als opslag niet beschikbaar is.
-    }
+    ui.saveLanguage(language);
   }
 
   if (isReady && !isLoading) {
@@ -149,67 +123,19 @@ function setLanguage(language, persist = true) {
   }
 }
 
-function parseApiDate(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return null;
-  }
-
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) {
-    return null;
-  }
-  return date;
-}
-
-function formatEventDate(startValue, endValue) {
-  const start = parseApiDate(startValue);
-  if (!start) {
-    return '';
-  }
-
-  const end = parseApiDate(endValue);
-  const startDay = start.getUTCDate();
-  const startMonth = monthFormatters[currentLanguage].format(start);
-  const startYear = start.getUTCFullYear();
-
-  if (!end || end <= start) {
-    return `${startDay} ${startMonth} ${startYear}`;
-  }
-
-  const endDay = end.getUTCDate();
-  const endMonth = monthFormatters[currentLanguage].format(end);
-  const endYear = end.getUTCFullYear();
-
-  if (startYear === endYear && start.getUTCMonth() === end.getUTCMonth()) {
-    return `${startDay} – ${endDay} ${startMonth} ${startYear}`;
-  }
-  if (startYear === endYear) {
-    return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${startYear}`;
-  }
-  return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
-}
-
-function safeSourceUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
-  } catch {
-    return null;
-  }
-}
-
 function createEventCard(event) {
   const text = translations[currentLanguage];
-  const card = document.createElement('article');
+  const card = document.createElement('a');
   card.className = 'event-card';
+  card.href = `event.html?id=${encodeURIComponent(event.id)}`;
+  card.setAttribute('aria-label', `${text.viewEvent}: ${event.title || text.missingTitle}`);
 
   const date = document.createElement('time');
   date.className = 'event-date';
   if (event.start_date) {
     date.dateTime = event.start_date;
   }
-  date.textContent = formatEventDate(event.start_date, event.end_date) || event.date_text || text.missingDate;
+  date.textContent = ui.formatEventDate(event.start_date, event.end_date, currentLanguage) || event.date_text || text.missingDate;
   card.append(date);
 
   const title = document.createElement('h3');
@@ -234,21 +160,14 @@ function createEventCard(event) {
   source.textContent = event.source || text.missingSource;
   footer.append(source);
 
-  const sourceUrl = safeSourceUrl(event.source_url);
-  if (sourceUrl) {
-    const link = document.createElement('a');
-    link.className = 'event-link';
-    link.href = sourceUrl;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.setAttribute('aria-label', `${text.viewEvent}: ${event.title || text.missingTitle} (${text.opensNewTab})`);
-    link.textContent = text.viewEvent;
-    const arrow = document.createElement('span');
-    arrow.setAttribute('aria-hidden', 'true');
-    arrow.textContent = '↗';
-    link.append(arrow);
-    footer.append(link);
-  }
+  const linkLabel = document.createElement('span');
+  linkLabel.className = 'event-link';
+  linkLabel.textContent = text.viewEvent;
+  const arrow = document.createElement('span');
+  arrow.setAttribute('aria-hidden', 'true');
+  arrow.textContent = '→';
+  linkLabel.append(arrow);
+  footer.append(linkLabel);
   card.append(footer);
 
   return card;
@@ -374,14 +293,5 @@ languageButtons.forEach((button) => {
   button.addEventListener('click', () => setLanguage(button.dataset.language));
 });
 
-let savedLanguage = 'nl';
-try {
-  const storedLanguage = window.localStorage.getItem(languageStorageKey);
-  if (translations[storedLanguage]) {
-    savedLanguage = storedLanguage;
-  }
-} catch {
-  // De eerste taalkeuze blijft Nederlands als opslag niet beschikbaar is.
-}
-setLanguage(savedLanguage, false);
+setLanguage(ui.getSavedLanguage(), false);
 fetchEvents();
