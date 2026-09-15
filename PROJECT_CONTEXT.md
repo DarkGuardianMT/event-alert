@@ -34,12 +34,14 @@ These counts are a snapshot and may change as the source calendars are updated.
 ## Current architecture
 
 - Python source modules in `scraper/sources/` collect raw events using requests and BeautifulSoup.
-- `scraper/collector.py` calls the source modules and combines their events.
+- `scraper/collector.py` records successful and failed source scrapes separately; its combined-list function remains available.
 - `scraper/normalizer.py` normalizes Dutch date text into `start_date` and `end_date`, preserving the original `date_text`.
-- `scraper/database.py` implements MySQL connections, inserts, and duplicate checks using `mysql-connector-python`.
+- `scraper/database.py` implements MySQL connections, inserts, duplicate checks, and lifecycle updates using `mysql-connector-python`.
 - Duplicate matching uses `title`, `start_date`, and `city`; matching events are skipped.
-- `scraper/main.py` collects, normalizes, stores events, and reports fetched, inserted, and skipped counts.
-- `database/schema.sql` defines the initial `events` table.
+- Duplicate observations refresh `last_seen_at` and reactivate the existing row. New rows start active with a current `last_seen_at` timestamp.
+- A successful nonempty scrape may mark unseen rows from that same stored source inactive. Failed, unexpectedly empty, and severely incomplete scrapes cannot deactivate rows. Inactive rows remain stored; events are never deleted.
+- `scraper/main.py` collects by source, normalizes dates, syncs lifecycle state, and reports source failures and suspicious results.
+- `database/schema.sql` defines the `events` table; `database/migrations/001_event_lifecycle.sql` adds the lifecycle fields to existing databases.
 - Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
 
 ## Not implemented yet
