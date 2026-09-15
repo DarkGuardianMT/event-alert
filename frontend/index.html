@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Vind lokale evenementen en activiteiten in Gouda en omliggende plaatsen.">
+  <title>Event Alert — Evenementen bij jou in de buurt</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./" aria-label="Event Alert startpagina" data-i18n-aria-label="brandLabel">Event <span>Alert</span></a>
+      <div class="header-actions">
+        <nav aria-label="Hoofdnavigatie" data-i18n-aria-label="navLabel">
+          <a class="nav-link" href="#events" data-i18n="nav">Evenementen</a>
+        </nav>
+        <div class="language-switch" role="group" aria-label="Taal / Language">
+          <button type="button" class="language-button" data-language="nl" aria-pressed="true">NL</button>
+          <button type="button" class="language-button" data-language="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <p class="eyebrow" data-i18n="heroEyebrow">Lokaal ontdekken, eenvoudig gemaakt</p>
+        <h1 id="hero-title"><span class="hero-heading-main" data-i18n="heroHeading">Ontdek wat er gebeurt</span><span class="hero-heading-accent" data-i18n="heroAccent">bij jou in de buurt.</span></h1>
+        <p class="hero-copy" data-i18n="heroCopy">Vind lokale evenementen, activiteiten en ontmoetingen in Gouda en omliggende plaatsen.</p>
+      </div>
+    </section>
+
+    <section class="container filter-section" aria-label="Evenementen zoeken" data-i18n-aria-label="filterLabel">
+      <form id="filter-form" class="filter-panel">
+        <div class="filters-grid">
+          <div class="field field-search">
+            <label for="search-filter" data-i18n="searchLabel">Zoeken</label>
+            <input id="search-filter" name="search" type="search" placeholder="Zoek evenementen..." data-i18n-placeholder="searchPlaceholder" autocomplete="off" aria-controls="event-grid">
+          </div>
+          <div class="field">
+            <label for="city-filter" data-i18n="cityLabel">Plaats</label>
+            <select id="city-filter" name="city">
+              <option value="" data-i18n="allCities">Alle plaatsen</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="from-filter" data-i18n="fromDate">Vanaf</label>
+            <input id="from-filter" name="from" type="date">
+          </div>
+          <div class="field">
+            <label for="to-filter" data-i18n="toDate">Tot en met</label>
+            <input id="to-filter" name="to" type="date">
+          </div>
+          <div class="filter-actions">
+            <button class="button button-primary" type="submit" data-i18n="findEvents">Zoek evenementen</button>
+            <button class="button button-clear" id="clear-filters" type="button" data-i18n="clearFilters">Filters wissen</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="container events-section" id="events" aria-labelledby="events-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker" data-i18n="sectionEyebrow">Dichter bij huis</p>
+          <h2 id="events-title" data-i18n="sectionHeading">Ontdek lokale evenementen</h2>
+        </div>
+        <p id="result-count" class="result-count" aria-live="polite">Evenementen zoeken…</p>
+      </div>
+
+      <div id="event-status" class="state-panel" role="status" aria-live="polite">
+        <h3 id="status-title">Evenementen laden...</h3>
+        <p id="status-message">We zoeken activiteiten bij jou in de buurt.</p>
+      </div>
+      <div id="event-grid" class="event-grid" hidden></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-brand">Event Alert</p>
+      <p data-i18n="footerTagline">Lokale evenementen op één plek.</p>
+      <p class="footer-note" data-i18n="footerNote">Gegevens komen uit openbare evenementbronnen.</p>
+    </div>
+  </footer>
+</body>
+</html>
