@@ -42,6 +42,7 @@ These counts are a snapshot and may change as the source calendars are updated.
 - A successful nonempty scrape may mark unseen rows from that same stored source inactive. Failed, unexpectedly empty, and severely incomplete scrapes cannot deactivate rows. Inactive rows remain stored; events are never deleted.
 - `scraper/main.py` collects by source, normalizes dates, syncs lifecycle state, and reports source failures and suspicious results.
 - `database/schema.sql` defines the `events` table; `database/migrations/001_event_lifecycle.sql` adds the lifecycle fields to existing databases.
+- `api/events/index.php` exposes active events as JSON at `GET /api/events/`, ordered by start date and title. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
 - Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
 
 ## Not implemented yet
