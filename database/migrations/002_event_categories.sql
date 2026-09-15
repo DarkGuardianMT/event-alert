@@ -1,19 +1,4 @@
-CREATE TABLE events (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    date_text VARCHAR(255),
-    start_date DATE,
-    end_date DATE,
-    location VARCHAR(255),
-    city VARCHAR(100),
-    source VARCHAR(100),
-    source_url TEXT,
-    last_seen_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
+-- Voeg alleen categorietabellen toe; bestaande evenementen blijven ongewijzigd.
 CREATE TABLE categories (
     id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     slug VARCHAR(40) NOT NULL,

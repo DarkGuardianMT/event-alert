@@ -1,0 +1,102 @@
+"""Bepaal vaste evenementcategorieën zonder externe diensten."""
+
+import re
+import unicodedata
+
+
+CATEGORY_SLUGS = frozenset({
+    "community", "sport", "kids_family", "culture", "workshop",
+    "lecture", "market", "exhibition", "other",
+})
+
+
+def _text(value):
+    if not isinstance(value, str):
+        return ""
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+COMMUNITY = re.compile(
+    r"\b(?:buurt\w*|wijk\w*|bewoner\w*|taalcaf(?:é|e)|talencaf(?:é|e)|"
+    r"leesclub|inloop|straatfeest|zomerwijkfeest|zomerfeest|openingsfestijn|"
+    r"burendag|veteranendag|oktoberfest|pubquiz|popquiz|vrijmibo|"
+    r"karaoke|disco|pride night|kermis|bbq)\b"
+)
+SPORT = re.compile(
+    r"\b(?:sport|buurtsport|yoga|wandelen|wandelgroep|wandeltocht|hardlopen|"
+    r"fitness|bewegen|voetbal|zwemmen|vitaal|singelloop|asfaltloop|"
+    r"goudasfaltloop|goudaasfaltloop|marathon|kidsrun|run|ijsbaan|"
+    r"fietsen|fietstocht|toernooi)\b"
+)
+SPORT_WITH_SOURCE = re.compile(r"\b(?:stap mee|valbus|valpreventie\w*)\b")
+KIDS = re.compile(
+    r"\b(?:kinder\w*|kinderen|peuter\w*|kleuter\w*|familie\w*|"
+    r"family|gezins\w*|jeugd\w*|jongeren|kidsrun|sinterklaas\w*|"
+    r"pakjesboot\w*)\b"
+)
+CHILD_AGE = re.compile(r"\b\d{1,2}\s+(?:tot|t/m|-)\s+\d{1,2}\s+jaar\b")
+YOUTH_CONTEXT = re.compile(r"\b(?:buurtsport|jeugd\w*|jongeren|meiden|jongens)\b")
+CULTURE = re.compile(
+    r"\b(?:monument\w*|erfgoed|kunst\w*|muziek\w*|"
+    r"theatervoorstelling|theaterproductie\w*|theaterstuk|"
+    r"film\w*|cultuur\w*|culture|kinderboek\w*|boek\w*|"
+    r"literair\w*|historisch\w*|concert\w*|jubileumconcert|"
+    r"meezingconcert|kerstconcert|adventsconcert|musical|koor\w*|"
+    r"orgel\w*|piano\w*|karaoke|tribute\w*|rock\w*|band|bands|"
+    r"songbook|candlelight|disco|dans\w*|ballet|opera\w*|"
+    r"cabaret|comedy|schrijver\w*|stadsdichter|bibliotheek|"
+    r"stadsbibliotheek|djembé|djembe|dinnershow)\b"
+)
+KNOWN_CULTURAL_FESTIVAL = re.compile(
+    r"\b(?:festival (?:de )?verwondering|verweven verhalen)\b"
+)
+WORKSHOP = re.compile(r"\b(?:workshop|praktijkles|masterclass)\b")
+PRACTICAL_LESSON = re.compile(
+    r"\b(?:snijtechnieken|sieraad maken|tekenen|schilderen|borduren|"
+    r"snoeien|handwerken)\b"
+)
+LECTURE = re.compile(r"\b(?:lezing|lecture|kennissessie|talk)\b")
+PRESENTATION_TALK = re.compile(r"\bpresentatie\s+(?:over|door)\b")
+MARKET = re.compile(
+    r"\b(?:markt|market|braderie|kerstmarkt|rommelmarkt|boerenmarkt|"
+    r"kaasmarkt|boekenmarkt|kunstmarkt|wintermarkt)\b"
+)
+EXHIBITION = re.compile(r"\b(?:expositie\w*|tentoonstelling\w*|exhibition\w*)\b")
+
+
+def classify(event) -> set[str]:
+    """Classificeer de opgeslagen evenementvelden zonder ze te wijzigen."""
+    title = _text(event.get("title"))
+    source = _text(event.get("source"))
+    location = _text(event.get("location"))
+    categories = set()
+
+    if COMMUNITY.search(title):
+        categories.add("community")
+    if SPORT.search(title) or (
+        source == "sport•gouda" and SPORT_WITH_SOURCE.search(title)
+    ):
+        categories.add("sport")
+    if KIDS.search(title) or CHILD_AGE.search(title) or (
+        "12+" in title and YOUTH_CONTEXT.search(title)
+    ):
+        categories.add("kids_family")
+    if CULTURE.search(title) or KNOWN_CULTURAL_FESTIVAL.search(title) or (
+        EXHIBITION.search(title)
+        and ("cultuurhuis" in source or "museum" in location)
+    ):
+        categories.add("culture")
+    if WORKSHOP.search(title) or (
+        source in {"volksuniversiteit gouda", "cultuurhuis garenspinnerij"}
+        and PRACTICAL_LESSON.search(title)
+    ):
+        categories.add("workshop")
+    if LECTURE.search(title) or PRESENTATION_TALK.search(title):
+        categories.add("lecture")
+    if MARKET.search(title):
+        categories.add("market")
+    if EXHIBITION.search(title):
+        categories.add("exhibition")
+
+    return categories or {"other"}

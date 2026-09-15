@@ -36,12 +36,14 @@ These counts are a snapshot and may change as the source calendars are updated.
 - Python source modules in `scraper/sources/` collect raw events using requests and BeautifulSoup.
 - `scraper/collector.py` records successful and failed source scrapes separately; its combined-list function remains available.
 - `scraper/normalizer.py` normalizes Dutch date text into `start_date` and `end_date`, preserving the original `date_text`.
-- `scraper/database.py` implements MySQL connections, inserts, duplicate checks, and lifecycle updates using `mysql-connector-python`.
+- `scraper/database.py` implements MySQL connections, inserts, duplicate checks, lifecycle updates, and event-category link synchronization using `mysql-connector-python`.
 - Duplicate matching uses `title`, `start_date`, and `city`; matching events are skipped.
 - Duplicate observations refresh `last_seen_at` and reactivate the existing row. New rows start active with a current `last_seen_at` timestamp.
 - A successful nonempty scrape may mark unseen rows from that same stored source inactive. Failed, unexpectedly empty, and severely incomplete scrapes cannot deactivate rows. Inactive rows remain stored; events are never deleted.
 - `scraper/main.py` collects by source, normalizes dates, syncs lifecycle state, and reports source failures and suspicious results.
 - `database/schema.sql` defines the `events` table; `database/migrations/001_event_lifecycle.sql` adds the lifecycle fields to existing databases.
+- `database/migrations/002_event_categories.sql` adds `categories` and the many-to-many `event_categories` table and seeds nine stable slugs: `community`, `sport`, `kids_family`, `culture`, `workshop`, `lecture`, `market`, `exhibition`, and `other`.
+- `scraper/categorizer.py` assigns one or more categories with deterministic non-AI rules. `scraper/backfill_categories.py` previews or transactionally categorizes all stored events, including inactive rows. New and duplicate observations classify the canonical stored row after the production duplicate match; category changes do not alter lifecycle safety.
 - `api/events/index.php` exposes active events as JSON at `GET /api/events/`, with optional exact-city and inclusive `from`/`to` date filters. Results are ordered by start date and title; invalid date filters return HTTP 400. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
 - `api/event/index.php` exposes one active event by numeric ID at `GET /api/event/?id={id}`. Invalid IDs return HTTP 400; missing and inactive events return HTTP 404.
 - `frontend/` contains the first HTML/CSS/vanilla JavaScript browsing interface. It loads event cards and city options from the PHP API, uses the API for city/date filters, and applies title/location search locally. Interface text and displayed dates switch between Dutch (default) and English; the choice is stored under `event-alert-language` in localStorage. Event titles, source names, and city names remain as supplied by the API.
@@ -50,10 +52,11 @@ These counts are a snapshot and may change as the source calendars are updated.
 
 ## Not implemented yet
 
-- Accounts, favorites, alerts, and categories.
+- Accounts, favorites, and alerts.
+- Category output and filtering in the PHP API, and category chips/filtering in the frontend.
 - Scheduler or cron.
 - AI extraction.
 
 ## Next planned step
 
-Prepare the reviewed frontend for its first deployment.
+Expose stored categories through the PHP API, then add localized category chips and filtering to the frontend.

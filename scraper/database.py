@@ -3,6 +3,8 @@ from contextlib import closing
 
 import mysql.connector
 
+from categorizer import CATEGORY_SLUGS, classify
+
 
 def get_connection():
     required = (
@@ -22,6 +24,53 @@ def get_connection():
         connection_timeout=10,
         autocommit=False,
     )
+
+
+STORED_EVENT_FIELDS = (
+    "title", "date_text", "start_date", "end_date",
+    "location", "city", "source", "source_url",
+)
+
+
+def load_category_ids(cursor):
+    cursor.execute("SELECT id, slug FROM categories")
+    category_ids = {slug: category_id for category_id, slug in cursor.fetchall()}
+    if set(category_ids) != CATEGORY_SLUGS:
+        raise ValueError("De categorieën in de database komen niet overeen met de regels.")
+    return category_ids
+
+
+def sync_category_links(cursor, event_id, slugs, category_ids):
+    if not slugs or not slugs <= category_ids.keys():
+        raise ValueError("Een evenement heeft ongeldige categorieën.")
+    desired = {category_ids[slug] for slug in slugs}
+    cursor.execute(
+        "SELECT category_id FROM event_categories WHERE event_id = %s FOR UPDATE",
+        (event_id,),
+    )
+    existing = {row[0] for row in cursor.fetchall()}
+    for category_id in sorted(desired - existing):
+        cursor.execute(
+            "INSERT INTO event_categories (event_id, category_id) VALUES (%s, %s)",
+            (event_id, category_id),
+        )
+    for category_id in sorted(existing - desired):
+        cursor.execute(
+            "DELETE FROM event_categories WHERE event_id = %s AND category_id = %s",
+            (event_id, category_id),
+        )
+
+
+def load_stored_event(cursor, event_id):
+    cursor.execute(
+        "SELECT title, date_text, start_date, end_date, location, city, source, source_url "
+        "FROM events WHERE id = %s FOR UPDATE",
+        (event_id,),
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise ValueError("Het opgeslagen evenement ontbreekt.")
+    return dict(zip(STORED_EVENT_FIELDS, row))
 
 
 def sync_events(source_events, connection=None, deactivate=True):
@@ -51,6 +100,7 @@ def sync_events(source_events, connection=None, deactivate=True):
 
     try:
         with closing(connection.cursor()) as cursor:
+            category_ids = load_category_ids(cursor)
             for source, events in source_events.items():
                 for event in events:
                     if event["source"] != source:
@@ -66,6 +116,8 @@ def sync_events(source_events, connection=None, deactivate=True):
                     existing = cursor.fetchone()
                     if existing is not None:
                         cursor.execute(refresh_query, (existing[0],))
+                        stored = load_stored_event(cursor, existing[0])
+                        sync_category_links(cursor, existing[0], classify(stored), category_ids)
                         result["skipped"] += 1
                         result["refreshed"] += 1
                         if existing[1] == source:
@@ -73,7 +125,10 @@ def sync_events(source_events, connection=None, deactivate=True):
                         continue
                     cursor.execute(insert_query, value)
                     result["inserted"] += cursor.rowcount
-                    seen_ids[source].add(cursor.lastrowid)
+                    event_id = cursor.lastrowid
+                    stored = load_stored_event(cursor, event_id)
+                    sync_category_links(cursor, event_id, classify(stored), category_ids)
+                    seen_ids[source].add(event_id)
 
             if deactivate:
                 for source, events in source_events.items():
