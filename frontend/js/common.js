@@ -91,5 +91,32 @@ window.EventAlertUI = (() => {
     }
   }
 
-  return { getSavedLanguage, saveLanguage, applyTranslations, formatEventDate, safeSourceUrl };
+  function createCategoryChips(categories, language, limit = Infinity) {
+    const list = document.createElement('div');
+    list.className = 'category-list';
+    const nameField = language === 'en' ? 'name_en' : 'name_nl';
+    const safeCategories = Array.isArray(categories) ? categories : [];
+
+    safeCategories.slice(0, limit).forEach((category) => {
+      const name = typeof category?.[nameField] === 'string' ? category[nameField].trim() : '';
+      if (!name) {
+        return;
+      }
+      const chip = document.createElement('span');
+      chip.className = 'category-chip';
+      chip.textContent = name;
+      list.append(chip);
+    });
+
+    return list;
+  }
+
+  return {
+    getSavedLanguage,
+    saveLanguage,
+    applyTranslations,
+    formatEventDate,
+    safeSourceUrl,
+    createCategoryChips,
+  };
 })();

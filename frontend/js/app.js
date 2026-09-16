@@ -1,6 +1,7 @@
 const form = document.getElementById('filter-form');
 const searchInput = document.getElementById('search-filter');
 const cityInput = document.getElementById('city-filter');
+const categoryInput = document.getElementById('category-filter');
 const fromInput = document.getElementById('from-filter');
 const toInput = document.getElementById('to-filter');
 const clearButton = document.getElementById('clear-filters');
@@ -28,6 +29,8 @@ const translations = {
     searchPlaceholder: 'Zoek evenementen...',
     cityLabel: 'Plaats',
     allCities: 'Alle plaatsen',
+    categoryLabel: 'Categorie',
+    allCategories: 'Alle categorieën',
     fromDate: 'Vanaf',
     toDate: 'Tot en met',
     findEvents: 'Zoek evenementen',
@@ -66,6 +69,8 @@ const translations = {
     searchPlaceholder: 'Search events...',
     cityLabel: 'City',
     allCities: 'All cities',
+    categoryLabel: 'Category',
+    allCategories: 'All categories',
     fromDate: 'From date',
     toDate: 'To date',
     findEvents: 'Find events',
@@ -93,6 +98,8 @@ const translations = {
 
 let currentEvents = [];
 let citiesLoaded = false;
+let categoriesLoaded = false;
+let availableCategories = [];
 let isReady = false;
 let isLoading = false;
 let latestRequest = 0;
@@ -111,6 +118,7 @@ function setLanguage(language, persist = true) {
   currentLanguage = language;
   const text = translations[language];
   ui.applyTranslations(language, text);
+  updateCategoryFilterLabels();
 
   if (persist) {
     ui.saveLanguage(language);
@@ -141,6 +149,11 @@ function createEventCard(event) {
   const title = document.createElement('h3');
   title.textContent = event.title || text.missingTitle;
   card.append(title);
+
+  const categories = ui.createCategoryChips(event.categories, currentLanguage, 3);
+  if (categories.childElementCount) {
+    card.append(categories);
+  }
 
   const details = document.createElement('div');
   details.className = 'event-details';
@@ -222,6 +235,40 @@ function populateCityFilter(events) {
   citiesLoaded = true;
 }
 
+function updateCategoryFilterLabels() {
+  const defaultOption = categoryInput.querySelector('option[value=""]');
+  if (defaultOption) {
+    defaultOption.textContent = translations[currentLanguage].allCategories;
+  }
+  const nameField = currentLanguage === 'en' ? 'name_en' : 'name_nl';
+  availableCategories.forEach((category) => {
+    const option = [...categoryInput.options].find((item) => item.value === category.slug);
+    if (option) {
+      option.textContent = category[nameField];
+    }
+  });
+}
+
+function populateCategoryFilter(events) {
+  const uniqueCategories = new Map();
+  events.forEach((event) => {
+    const categories = Array.isArray(event.categories) ? event.categories : [];
+    categories.forEach((category) => {
+      if (category?.slug && !uniqueCategories.has(category.slug)) {
+        uniqueCategories.set(category.slug, category);
+      }
+    });
+  });
+  availableCategories = [...uniqueCategories.values()];
+  availableCategories.forEach((category) => {
+    const option = document.createElement('option');
+    option.value = category.slug;
+    categoryInput.append(option);
+  });
+  updateCategoryFilterLabels();
+  categoriesLoaded = true;
+}
+
 async function fetchEvents(filters = {}) {
   const requestNumber = ++latestRequest;
   isLoading = true;
@@ -252,6 +299,9 @@ async function fetchEvents(filters = {}) {
     if (!citiesLoaded) {
       populateCityFilter(payload.events);
     }
+    if (!categoriesLoaded) {
+      populateCategoryFilter(payload.events);
+    }
     isLoading = false;
     isReady = true;
     renderEvents();
@@ -275,7 +325,12 @@ form.addEventListener('submit', (event) => {
     showState('dates');
     return;
   }
-  return fetchEvents({ city: cityInput.value, from: fromInput.value, to: toInput.value });
+  return fetchEvents({
+    city: cityInput.value,
+    category: categoryInput.value,
+    from: fromInput.value,
+    to: toInput.value,
+  });
 });
 
 searchInput.addEventListener('input', () => {

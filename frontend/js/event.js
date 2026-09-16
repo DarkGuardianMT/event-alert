@@ -6,6 +6,7 @@ const statusMessage = document.getElementById('detail-status-message');
 const detail = document.getElementById('event-detail');
 const detailDate = document.getElementById('detail-date');
 const detailTitle = document.getElementById('detail-title');
+const detailCategories = document.getElementById('detail-categories');
 const detailCity = document.getElementById('detail-city');
 const detailLocation = document.getElementById('detail-location');
 const detailSource = document.getElementById('detail-source');
@@ -86,6 +87,9 @@ function renderEvent() {
     detailDate.dateTime = event.start_date;
   }
   detailTitle.textContent = event.title;
+  const categories = ui.createCategoryChips(event.categories, currentLanguage);
+  detailCategories.replaceChildren(...categories.childNodes);
+  detailCategories.hidden = !detailCategories.childElementCount;
   document.title = `${event.title} — Event Alert`;
   detailCity.textContent = event.city || text.missingCity;
   detailLocation.textContent = event.location || text.missingLocation;

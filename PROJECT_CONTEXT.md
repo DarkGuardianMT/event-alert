@@ -46,17 +46,17 @@ These counts are a snapshot and may change as the source calendars are updated.
 - `scraper/categorizer.py` assigns one or more categories with deterministic non-AI rules. `scraper/backfill_categories.py` previews or transactionally categorizes all stored events, including inactive rows. New and duplicate observations classify the canonical stored row after the production duplicate match; category changes do not alter lifecycle safety.
 - `api/events/index.php` exposes active events and their ordered category arrays as JSON at `GET /api/events/`, with optional exact-city, inclusive `from`/`to` date, and exact `category` slug filters. Invalid filters return HTTP 400. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
 - `api/event/index.php` exposes one active event and its ordered category array by numeric ID at `GET /api/event/?id={id}`. Invalid IDs return HTTP 400; missing and inactive events return HTTP 404.
-- `frontend/` contains the first HTML/CSS/vanilla JavaScript browsing interface. It loads event cards and city options from the PHP API, uses the API for city/date filters, and applies title/location search locally. Interface text and displayed dates switch between Dutch (default) and English; the choice is stored under `event-alert-language` in localStorage. Event titles, source names, and city names remain as supplied by the API.
-- Each event card opens `frontend/event.html?id={id}` in the same tab. The detail page loads the single-event API, shows its original source link, and shares the list's date formatting and language preference through `frontend/js/common.js`.
+- `frontend/` contains the HTML/CSS/vanilla JavaScript browsing interface. It builds city and category options from the unfiltered active-event response, uses the API for city/date/category filters, and applies title/location search locally. Event cards show up to three category chips, while detail pages show every category.
+- Interface text, displayed dates, category options, and category chips switch between Dutch (default) and English using the API's localized category names. The choice is stored under `event-alert-language` in localStorage. Event titles, source names, city names, and locations remain as supplied by the API.
+- Each event card opens `frontend/event.html?id={id}` in the same tab. The detail page loads the single-event API, shows all category chips and its original source link, and shares the list's date formatting, category rendering, and language preference through `frontend/js/common.js`.
 - Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
 
 ## Not implemented yet
 
 - Accounts, favorites, and alerts.
-- Category chips and filtering in the frontend.
 - Scheduler or cron.
 - AI extraction.
 
 ## Next planned step
 
-Add localized category chips and filtering to the frontend.
+Prepare the completed category-enabled MVP for deployment and continue with accounts, favorites, or alerts when prioritized.
