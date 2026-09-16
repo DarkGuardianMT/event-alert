@@ -57,10 +57,29 @@ if (array_key_exists('city', $_GET)) {
     $filters['city'] = $_GET['city'];
 }
 
+if (array_key_exists('category', $_GET)) {
+    if (!is_string($_GET['category'])) {
+        invalidFilters();
+    }
+    $filters['category'] = $_GET['category'];
+}
+
 try {
     require_once __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/categories.php';
 
     $database = eventAlertDatabase();
+    if (isset($filters['category']) && !eventAlertCategoryExists($database, $filters['category'])) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'count' => 0,
+            'events' => [],
+            'error' => 'Invalid category',
+        ]);
+        exit;
+    }
+
     $query =
         'SELECT id, title, date_text, start_date, end_date, location, city, source, source_url '
         . 'FROM events WHERE is_active = 1';
@@ -78,11 +97,25 @@ try {
         $query .= ' AND start_date <= :to_date';
         $parameters['to_date'] = $filters['to'];
     }
+    if (isset($filters['category'])) {
+        $query .= ' AND EXISTS ('
+            . 'SELECT 1 FROM event_categories ec '
+            . 'INNER JOIN categories c ON c.id = ec.category_id '
+            . 'WHERE ec.event_id = events.id AND BINARY c.slug = BINARY :category'
+            . ')';
+        $parameters['category'] = $filters['category'];
+    }
 
     $query .= ' ORDER BY start_date ASC, title ASC';
     $statement = $database->prepare($query);
     $statement->execute($parameters);
     $events = $statement->fetchAll();
+    $eventIds = array_map(static fn(array $event): int => (int) $event['id'], $events);
+    $categoriesByEvent = eventAlertCategoriesByEvent($database, $eventIds);
+    foreach ($events as &$event) {
+        $event['categories'] = $categoriesByEvent[(int) $event['id']] ?? [];
+    }
+    unset($event);
 
     http_response_code(200);
     echo json_encode([

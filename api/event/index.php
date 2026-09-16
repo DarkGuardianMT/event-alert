@@ -24,6 +24,7 @@ if ($id === false) {
 
 try {
     require_once __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/categories.php';
 
     $database = eventAlertDatabase();
     $statement = $database->prepare(
@@ -39,6 +40,9 @@ try {
         echo json_encode(['success' => false, 'event' => null, 'error' => 'Event not found.']);
         exit;
     }
+
+    $categoriesByEvent = eventAlertCategoriesByEvent($database, [(int) $event['id']]);
+    $event['categories'] = $categoriesByEvent[(int) $event['id']] ?? [];
 
     http_response_code(200);
     echo json_encode(['success' => true, 'event' => $event], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);

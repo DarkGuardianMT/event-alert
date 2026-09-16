@@ -44,8 +44,8 @@ These counts are a snapshot and may change as the source calendars are updated.
 - `database/schema.sql` defines the `events` table; `database/migrations/001_event_lifecycle.sql` adds the lifecycle fields to existing databases.
 - `database/migrations/002_event_categories.sql` adds `categories` and the many-to-many `event_categories` table and seeds nine stable slugs: `community`, `sport`, `kids_family`, `culture`, `workshop`, `lecture`, `market`, `exhibition`, and `other`.
 - `scraper/categorizer.py` assigns one or more categories with deterministic non-AI rules. `scraper/backfill_categories.py` previews or transactionally categorizes all stored events, including inactive rows. New and duplicate observations classify the canonical stored row after the production duplicate match; category changes do not alter lifecycle safety.
-- `api/events/index.php` exposes active events as JSON at `GET /api/events/`, with optional exact-city and inclusive `from`/`to` date filters. Results are ordered by start date and title; invalid date filters return HTTP 400. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
-- `api/event/index.php` exposes one active event by numeric ID at `GET /api/event/?id={id}`. Invalid IDs return HTTP 400; missing and inactive events return HTTP 404.
+- `api/events/index.php` exposes active events and their ordered category arrays as JSON at `GET /api/events/`, with optional exact-city, inclusive `from`/`to` date, and exact `category` slug filters. Invalid filters return HTTP 400. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
+- `api/event/index.php` exposes one active event and its ordered category array by numeric ID at `GET /api/event/?id={id}`. Invalid IDs return HTTP 400; missing and inactive events return HTTP 404.
 - `frontend/` contains the first HTML/CSS/vanilla JavaScript browsing interface. It loads event cards and city options from the PHP API, uses the API for city/date filters, and applies title/location search locally. Interface text and displayed dates switch between Dutch (default) and English; the choice is stored under `event-alert-language` in localStorage. Event titles, source names, and city names remain as supplied by the API.
 - Each event card opens `frontend/event.html?id={id}` in the same tab. The detail page loads the single-event API, shows its original source link, and shares the list's date formatting and language preference through `frontend/js/common.js`.
 - Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
@@ -53,10 +53,10 @@ These counts are a snapshot and may change as the source calendars are updated.
 ## Not implemented yet
 
 - Accounts, favorites, and alerts.
-- Category output and filtering in the PHP API, and category chips/filtering in the frontend.
+- Category chips and filtering in the frontend.
 - Scheduler or cron.
 - AI extraction.
 
 ## Next planned step
 
-Expose stored categories through the PHP API, then add localized category chips and filtering to the frontend.
+Add localized category chips and filtering to the frontend.
