@@ -23,17 +23,20 @@ COMMUNITY = re.compile(
     r"burendag|veteranendag|oktoberfest|pubquiz|popquiz|vrijmibo|"
     r"karaoke|disco|pride night|kermis|bbq)\b"
 )
+KNOWN_COMMUNITY_ACTIVITY = re.compile(
+    r"\b(?:yap\s*&\s*yarn|gouda bij kaarslicht)\b"
+)
 SPORT = re.compile(
     r"\b(?:sport|buurtsport|yoga|wandelen|wandelgroep|wandeltocht|hardlopen|"
     r"fitness|bewegen|voetbal|zwemmen|vitaal|singelloop|asfaltloop|"
     r"goudasfaltloop|goudaasfaltloop|marathon|kidsrun|run|ijsbaan|"
-    r"fietsen|fietstocht|toernooi)\b"
+    r"fietsen|fietstocht|\w*toernooi\w*)\b"
 )
 SPORT_WITH_SOURCE = re.compile(r"\b(?:stap mee|valbus|valpreventie\w*)\b")
 KIDS = re.compile(
     r"\b(?:kinder\w*|kinderen|peuter\w*|kleuter\w*|familie\w*|"
     r"family|gezins\w*|jeugd\w*|jongeren|kidsrun|sinterklaas\w*|"
-    r"pakjesboot\w*)\b"
+    r"pakjesboot\w*|kleintjes|jongerenkoor\w*)\b"
 )
 CHILD_AGE = re.compile(r"\b\d{1,2}\s+(?:tot|t/m|-)\s+\d{1,2}\s+jaar\b")
 YOUTH_CONTEXT = re.compile(r"\b(?:buurtsport|jeugd\w*|jongeren|meiden|jongens)\b")
@@ -48,8 +51,16 @@ CULTURE = re.compile(
     r"cabaret|comedy|schrijver\w*|stadsdichter|bibliotheek|"
     r"stadsbibliotheek|djembé|djembe|dinnershow)\b"
 )
-KNOWN_CULTURAL_FESTIVAL = re.compile(
-    r"\b(?:festival (?:de )?verwondering|verweven verhalen)\b"
+EXPLICIT_PERFORMANCE = re.compile(
+    r"\b(?:voorstelling\w*|peutervoorstelling\w*|undercoversessie\w*|"
+    r"introdans|videoclip\w*|music|sing-along|zangavond|oudejaarsconference|"
+    r"gospel|jongerenkoor\w*|mannenkoor\w*|mannenkoren|choir|orkest\w*|"
+    r"drummer\w*|"
+    r"superdrum\w*|museum|musea)\b"
+)
+MUSIC_GENRE = re.compile(r"\b(?:metalcore|thrash metal|alternative metal)\b")
+KNOWN_CULTURAL_ACTIVITY = re.compile(
+    r"\b(?:festival (?:de )?verwondering|verweven verhalen|gouda bij kaarslicht)\b"
 )
 WORKSHOP = re.compile(r"\b(?:workshop|praktijkles|masterclass)\b")
 PRACTICAL_LESSON = re.compile(
@@ -63,6 +74,12 @@ MARKET = re.compile(
     r"kaasmarkt|boekenmarkt|kunstmarkt|wintermarkt)\b"
 )
 EXHIBITION = re.compile(r"\b(?:expositie\w*|tentoonstelling\w*|exhibition\w*)\b")
+VOLKSUNIVERSITEIT_CULTURE_URL = re.compile(
+    r"\Ahttps?://(?:www\.)?volksuniversiteitgouda\.nl/kunst-cultuur(?:[/?#]|\Z)"
+)
+VOLKSUNIVERSITEIT_CULINARY_URL = re.compile(
+    r"\Ahttps?://(?:www\.)?volksuniversiteitgouda\.nl/culinair(?:[/?#]|\Z)"
+)
 
 
 def classify(event) -> set[str]:
@@ -70,9 +87,10 @@ def classify(event) -> set[str]:
     title = _text(event.get("title"))
     source = _text(event.get("source"))
     location = _text(event.get("location"))
+    source_url = _text(event.get("source_url"))
     categories = set()
 
-    if COMMUNITY.search(title):
+    if COMMUNITY.search(title) or KNOWN_COMMUNITY_ACTIVITY.search(title):
         categories.add("community")
     if SPORT.search(title) or (
         source == "sport•gouda" and SPORT_WITH_SOURCE.search(title)
@@ -82,14 +100,27 @@ def classify(event) -> set[str]:
         "12+" in title and YOUTH_CONTEXT.search(title)
     ):
         categories.add("kids_family")
-    if CULTURE.search(title) or KNOWN_CULTURAL_FESTIVAL.search(title) or (
-        EXHIBITION.search(title)
-        and ("cultuurhuis" in source or "museum" in location)
+    if (
+        CULTURE.search(title)
+        or EXPLICIT_PERFORMANCE.search(title)
+        or MUSIC_GENRE.search(title)
+        or KNOWN_CULTURAL_ACTIVITY.search(title)
+        or (
+            source == "volksuniversiteit gouda"
+            and VOLKSUNIVERSITEIT_CULTURE_URL.search(source_url)
+        )
+        or (
+            EXHIBITION.search(title)
+            and ("cultuurhuis" in source or "museum" in location)
+        )
     ):
         categories.add("culture")
     if WORKSHOP.search(title) or (
         source in {"volksuniversiteit gouda", "cultuurhuis garenspinnerij"}
         and PRACTICAL_LESSON.search(title)
+    ) or (
+        source == "volksuniversiteit gouda"
+        and VOLKSUNIVERSITEIT_CULINARY_URL.search(source_url)
     ):
         categories.add("workshop")
     if LECTURE.search(title) or PRESENTATION_TALK.search(title):
