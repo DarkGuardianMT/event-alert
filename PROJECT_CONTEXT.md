@@ -50,7 +50,8 @@ These counts are a snapshot and may change as the source calendars are updated.
 - `frontend/` contains the HTML/CSS/vanilla JavaScript browsing interface. It builds city and category options from the unfiltered active-event response, uses the API for city/date/category filters, and applies title/location search locally. Event cards show up to three category chips, while detail pages show every category.
 - Interface text, displayed dates, category options, and category chips switch between Dutch (default) and English using the API's localized category names. The choice is stored under `event-alert-language` in localStorage. Event titles, source names, city names, and locations remain as supplied by the API.
 - Each event card opens `frontend/event.html?id={id}` in the same tab. The detail page loads the single-event API, shows all category chips and its original source link, and shares the list's date formatting, category rendering, and language preference through `frontend/js/common.js`.
-- Development uses local MySQL through XAMPP. Database configuration comes from environment variables.
+- Development uses local MySQL through XAMPP. PHP and Python share the `EVENT_ALERT_DB_HOST`, `EVENT_ALERT_DB_PORT`, `EVENT_ALERT_DB_NAME`, `EVENT_ALERT_DB_USER`, and `EVENT_ALERT_DB_PASSWORD` configuration names.
+- The PHP API retains XAMPP-compatible local defaults. The Python scraper requires the database name and user while defaulting the local host, port, and empty password. Production hosting must inject real credentials through its process or web-server environment; the application does not require or automatically load dotenv files. `.env` remains ignored, and `.env.example` documents safe local values.
 
 ## Not implemented yet
 

@@ -57,7 +57,19 @@ python -m pip install -r scraper\requirements.txt
 
 Create a database named `event_alert`. For a new installation, apply `database/schema.sql`. Existing installations should apply the relevant files in `database/migrations/` in order.
 
-Database configuration is supplied through environment variables. The scraper requires `EVENT_ALERT_DB_NAME` and `EVENT_ALERT_DB_USER`; `EVENT_ALERT_DB_HOST`, `EVENT_ALERT_DB_PORT`, and `EVENT_ALERT_DB_PASSWORD` are optional. The PHP API uses the same variables and has XAMPP-compatible local defaults.
+## Environment Variables
+
+The PHP API and Python scraper use the same database environment variables:
+
+- `EVENT_ALERT_DB_HOST`
+- `EVENT_ALERT_DB_PORT`
+- `EVENT_ALERT_DB_NAME`
+- `EVENT_ALERT_DB_USER`
+- `EVENT_ALERT_DB_PASSWORD`
+
+The PHP API falls back to XAMPP-compatible local values: `localhost`, port `3306`, database `event_alert`, user `root`, and an empty password. The Python scraper uses the same host, port, and password defaults, but requires `EVENT_ALERT_DB_NAME` and `EVENT_ALERT_DB_USER` to be set explicitly.
+
+`.env.example` contains safe local example values. The actual `.env` file is ignored by Git. The application does not load `.env` files automatically, so export the variables into the scraper process or configure them in the PHP/web-server environment. Production hosting should provide its real database credentials through that environment and must not commit them to the repository.
 
 ## Running the Scraper
 
