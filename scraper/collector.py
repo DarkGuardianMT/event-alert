@@ -4,6 +4,7 @@ from sources.uitgouda import fetch_events as fetch_uitgouda_events
 from sources.volksuniversiteit_gouda import fetch_events as fetch_volksuniversiteit_events
 from sources.sportpunt_gouda import fetch_events as fetch_sportpunt_events
 from sources.chocoladefabriek import fetch_events as fetch_chocoladefabriek_events
+from sources.gouda_bruist import fetch_events as fetch_gouda_bruist_events
 
 
 SOURCES = (
@@ -13,6 +14,7 @@ SOURCES = (
     ("Volksuniversiteit Gouda", fetch_volksuniversiteit_events),
     ("SPORT•GOUDA", fetch_sportpunt_events),
     ("Chocoladefabriek Gouda", fetch_chocoladefabriek_events),
+    ("Gouda Bruist", fetch_gouda_bruist_events),
 )
 
 

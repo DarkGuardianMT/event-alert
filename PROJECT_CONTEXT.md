@@ -23,11 +23,16 @@ Large concerts, stadium events, and large ticketing platforms are not a priority
 
 ## Active sources and collection
 
-Verified local collection on 2026-09-13:
+Verified full local collection on 2026-09-17:
 
-- Gemeente Gouda evenementenkalender: 46 events.
-- Cultuurhuis Garenspinnerij: 17 events after source-level duplicate removal.
-- Combined: 63 fetched events and 62 unique rows stored in the local MySQL database.
+- Gemeente Gouda: 56 events.
+- Cultuurhuis Garenspinnerij: 20 events.
+- UitGouda: 60 events.
+- Volksuniversiteit Gouda: 34 events.
+- SPORT•GOUDA: 25 events.
+- Chocoladefabriek Gouda: 6 events.
+- Gouda Bruist: 82 safe candidates, of which 80 are stored under that source because two matched existing cross-source identities.
+- The local MySQL database contains 448 rows: 435 active and 13 inactive.
 
 These counts are a snapshot and may change as the source calendars are updated.
 
@@ -48,6 +53,7 @@ These counts are a snapshot and may change as the source calendars are updated.
 - A category quality audit added conservative rules for explicit performance and music wording, community titles such as `Yap & Yarn` and `Gouda bij Kaarslicht`, youth and compound tournament wording, and exact Volksuniversiteit `/kunst-cultuur/` and `/culinair/` URL sections. Across all 329 stored events, `other` decreased from 159 (48.33%) to 103 (31.31%); active `other` decreased from 156 to 100. Classification remains deterministic and non-AI. Opaque film, theatre, party, festival, lifestyle, and course titles intentionally remain `other` when the stored fields do not provide reliable evidence.
 - A controlled metadata-only backfill preserves row counts, active flags, and lifecycle timestamps. The 2026-09-17 local backfill populated 79 start times, 44 end times, and 71 descriptions across 329 stored rows. Stored coverage by source is: Gemeente Gouda 0/0/0, Garenspinnerij 0/0/17, UitGouda 23/23/0, Volksuniversiteit Gouda 34/0/34, SPORT•GOUDA 21/21/19, and Chocoladefabriek Gouda 1/0/1 for start time/end time/description.
 - Source extraction stays conservative. Gemeente Gouda has no reliable richer metadata; Garenspinnerij uses listing excerpts; UitGouda accepts times only when visible card time agrees with structured data; Volksuniversiteit uses its single-session time and event body; SPORT•GOUDA accepts only unambiguous explicit ranges and the recurring girls activity description; Chocoladefabriek uses its detail header time and event-specific content. Missing fields remain null, duration text is not converted into an invented end time, and descriptions are never generated or summarized with AI.
+- Gouda Bruist is the seventh source. Its scraper keeps a persistent session for the initial listing and POST/AJAX pagination, caches activity details by activity ID, and caches linked location pages by location ID. It accepts only explicitly verified Gouda locations and excludes unresolved, outside-Gouda, and online-only activities. Listing day/month values receive a year only when explicit detail-page bounds make the result unambiguous; weekday-only recurrence text is never expanded. Discrete recurring sessions become one row per explicit card, while an explicit multi-day `Tentoonstelling` with consistent times becomes one ranged event. A live 2026-09-17 run scanned 910 cards and 313 details, excluded 343 unresolved-city cards, 8 online cards, and 362 otherwise eligible cards without safe year bounds, collapsed 7 continuous ranges covering 122 listing cards, and retained 72 explicit occurrences from 5 discrete recurring activities. The resulting 82 candidates had 82 start times, 80 safe end times, and 82 descriptions. Source health checks reject runs below 500 raw cards, 150 activity IDs, or 60 final candidates before lifecycle synchronization.
 - `api/events/index.php` exposes active events, nullable start/end times, and ordered category arrays as JSON at `GET /api/events/`, with optional exact-city, inclusive `from`/`to` date, and exact `category` slug filters. Descriptions stay out of the list response to keep it compact. Invalid filters return HTTP 400. `api/config/database.php` connects through PHP PDO using environment variables and XAMPP-compatible local defaults.
 - `api/event/index.php` exposes one active event, nullable start/end times, its full nullable source description, and its ordered category array by numeric ID at `GET /api/event/?id={id}`. Invalid IDs return HTTP 400; missing and inactive events return HTTP 404.
 - `frontend/` contains the HTML/CSS/vanilla JavaScript browsing interface. It builds city and category options from the unfiltered active-event response, uses the API for city/date/category filters, and applies title/location search locally. Event cards show up to three category chips, while detail pages show every category.
