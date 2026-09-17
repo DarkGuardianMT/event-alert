@@ -30,6 +30,8 @@ def fetch_events():
             events.append({
                 "title": title,
                 "date_text": date_text,
+                "time_text": None,
+                "description": None,
                 "location": location,
                 "city": "Gouda",
                 "source": "Gemeente Gouda",

@@ -10,6 +10,8 @@ const detailCategories = document.getElementById('detail-categories');
 const detailCity = document.getElementById('detail-city');
 const detailLocation = document.getElementById('detail-location');
 const detailSource = document.getElementById('detail-source');
+const detailDescriptionSection = document.getElementById('detail-description-section');
+const detailDescription = document.getElementById('detail-description');
 const originalSource = document.getElementById('original-source');
 
 const translations = {
@@ -24,6 +26,7 @@ const translations = {
     cityLabel: 'Plaats',
     locationLabel: 'Locatie',
     sourceLabel: 'Bron',
+    descriptionLabel: 'Beschrijving',
     originalSource: 'Bekijk originele bron',
     sourceLinkLabel: 'Bekijk originele bron (opent in een nieuw tabblad)',
     footerTagline: 'Lokale evenementen op één plek.',
@@ -50,6 +53,7 @@ const translations = {
     cityLabel: 'City',
     locationLabel: 'Location',
     sourceLabel: 'Source',
+    descriptionLabel: 'Description',
     originalSource: 'View original source',
     sourceLinkLabel: 'View original source (opens in a new tab)',
     footerTagline: 'Local events in one place.',
@@ -81,10 +85,18 @@ function showState(state) {
 function renderEvent() {
   const event = currentEvent;
   const text = translations[currentLanguage];
-  detailDate.textContent = ui.formatEventDate(event.start_date, event.end_date, currentLanguage)
+  detailDate.textContent = ui.formatEventDate(
+    event.start_date,
+    event.end_date,
+    currentLanguage,
+    event.start_time,
+    event.end_time
+  )
     || event.date_text || text.missingDate;
   if (event.start_date) {
-    detailDate.dateTime = event.start_date;
+    detailDate.dateTime = event.start_time
+      ? `${event.start_date}T${event.start_time}`
+      : event.start_date;
   }
   detailTitle.textContent = event.title;
   const categories = ui.createCategoryChips(event.categories, currentLanguage);
@@ -94,6 +106,9 @@ function renderEvent() {
   detailCity.textContent = event.city || text.missingCity;
   detailLocation.textContent = event.location || text.missingLocation;
   detailSource.textContent = event.source || text.missingSource;
+  const description = typeof event.description === 'string' ? event.description.trim() : '';
+  detailDescription.textContent = description;
+  detailDescriptionSection.hidden = !description;
 
   const sourceUrl = ui.safeSourceUrl(event.source_url);
   originalSource.hidden = !sourceUrl;

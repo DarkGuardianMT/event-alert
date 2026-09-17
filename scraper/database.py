@@ -27,7 +27,7 @@ def get_connection():
 
 
 STORED_EVENT_FIELDS = (
-    "title", "date_text", "start_date", "end_date",
+    "title", "date_text", "start_date", "end_date", "start_time", "end_time", "description",
     "location", "city", "source", "source_url",
 )
 
@@ -63,7 +63,8 @@ def sync_category_links(cursor, event_id, slugs, category_ids):
 
 def load_stored_event(cursor, event_id):
     cursor.execute(
-        "SELECT title, date_text, start_date, end_date, location, city, source, source_url "
+        "SELECT title, date_text, start_date, end_date, start_time, end_time, description, "
+        "location, city, source, source_url "
         "FROM events WHERE id = %s FOR UPDATE",
         (event_id,),
     )
@@ -85,12 +86,19 @@ def sync_events(source_events, connection=None, deactivate=True):
     """
     insert_query = """
         INSERT INTO events
-            (title, date_text, start_date, end_date, location, city, source, source_url,
-             is_active, last_seen_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, CURRENT_TIMESTAMP(6))
+            (title, date_text, start_date, end_date, start_time, end_time, description,
+             location, city, source, source_url, is_active, last_seen_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, CURRENT_TIMESTAMP(6))
     """
     refresh_query = """
         UPDATE events SET last_seen_at = CURRENT_TIMESTAMP(6), is_active = 1
+        WHERE id = %s
+    """
+    metadata_query = """
+        UPDATE events SET
+            start_time = COALESCE(start_time, %s),
+            end_time = COALESCE(end_time, %s),
+            description = COALESCE(NULLIF(description, ''), %s)
         WHERE id = %s
     """
     own_connection = connection is None
@@ -109,13 +117,17 @@ def sync_events(source_events, connection=None, deactivate=True):
                         event["title"], event["date_text"],
                         # MySQL DATE-kolommen gebruiken NULL voor ontbrekende datums.
                         event["start_date"] or None, event["end_date"] or None,
+                        event.get("start_time") or None, event.get("end_time") or None,
+                        event.get("description") or None,
                         event["location"], event["city"], source, event["source_url"],
                     )
                     # De productie-identiteit blijft titel, startdatum en stad.
-                    cursor.execute(duplicate_query, (value[0], value[2], value[5]))
+                    cursor.execute(duplicate_query, (value[0], value[2], value[8]))
                     existing = cursor.fetchone()
                     if existing is not None:
                         cursor.execute(refresh_query, (existing[0],))
+                        if existing[1] == source:
+                            cursor.execute(metadata_query, (value[4], value[5], value[6], existing[0]))
                         stored = load_stored_event(cursor, existing[0])
                         sync_category_links(cursor, existing[0], classify(stored), category_ids)
                         result["skipped"] += 1
@@ -177,3 +189,66 @@ def insert_events(events):
         grouped.setdefault(event["source"], []).append(event)
     result = sync_events(grouped, deactivate=False)
     return {"inserted": result["inserted"], "skipped": result["skipped"]}
+
+
+def backfill_event_metadata(source_events, connection=None, apply=False):
+    result = {
+        "matched": 0,
+        "rows_updated": 0,
+        "start_times_added": 0,
+        "end_times_added": 0,
+        "descriptions_added": 0,
+    }
+    own_connection = connection is None
+    if own_connection:
+        connection = get_connection()
+
+    try:
+        with closing(connection.cursor(dictionary=True)) as cursor:
+            for source, events in source_events.items():
+                for event in events:
+                    cursor.execute(
+                        "SELECT id, start_time, end_time, description FROM events "
+                        "WHERE title = %s AND start_date <=> %s AND city <=> %s AND source = %s "
+                        "LIMIT 1 FOR UPDATE",
+                        (event["title"], event["start_date"] or None, event["city"], source),
+                    )
+                    stored = cursor.fetchone()
+                    if stored is None:
+                        continue
+                    result["matched"] += 1
+                    additions = {
+                        "start_time": event.get("start_time") if not stored["start_time"] else None,
+                        "end_time": event.get("end_time") if not stored["end_time"] else None,
+                        "description": event.get("description") if not stored["description"] else None,
+                    }
+                    if additions["start_time"]:
+                        result["start_times_added"] += 1
+                    if additions["end_time"]:
+                        result["end_times_added"] += 1
+                    if additions["description"]:
+                        result["descriptions_added"] += 1
+                    if not any(additions.values()):
+                        continue
+                    result["rows_updated"] += 1
+                    if apply:
+                        cursor.execute(
+                            "UPDATE events SET start_time = COALESCE(start_time, %s), "
+                            "end_time = COALESCE(end_time, %s), "
+                            "description = COALESCE(NULLIF(description, ''), %s) WHERE id = %s",
+                            (additions["start_time"], additions["end_time"],
+                             additions["description"], stored["id"]),
+                        )
+        if own_connection:
+            if apply:
+                connection.commit()
+            else:
+                connection.rollback()
+    except Exception:
+        if own_connection:
+            connection.rollback()
+        raise
+    finally:
+        if own_connection:
+            connection.close()
+    return result

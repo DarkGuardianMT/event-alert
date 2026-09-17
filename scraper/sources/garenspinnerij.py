@@ -43,10 +43,15 @@ def fetch_events():
 
             link = title_element.select_one("a[href]")
             location_element = card.select_one(".post_custom_field.locatie")
+            description_element = card.select_one(".samenvatting .w-post-elm-value, .samenvatting")
             location = location_element.get_text(" ", strip=True) if location_element else ""
             event = {
                 "title": title,
                 "date_text": date_text,
+                "time_text": None,
+                "description": (
+                    description_element.get_text(" ", strip=True) if description_element else None
+                ),
                 "location": location or SOURCE_NAME,
                 "city": "Gouda",
                 "source": SOURCE_NAME,

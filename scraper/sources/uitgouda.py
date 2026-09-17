@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import date
+from datetime import date, datetime
 from urllib.parse import urljoin, urldefrag
 
 import requests
@@ -13,6 +13,7 @@ MONTHS = (
     "juli", "augustus", "september", "oktober", "november", "december",
 )
 KNOWN_CITIES = ("Gouda", "Waddinxveen", "Bodegraven", "Haastrecht", "Reeuwijk")
+CLOCK_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3])[:.]([0-5]\d)(?!\d)")
 
 
 def _event_nodes(value):
@@ -51,6 +52,34 @@ def _date_text(value):
     # Behoud de lokale kalenderdatum uit de bron, zonder tijdzoneconversie.
     parsed = date.fromisoformat(value.split("T", 1)[0])
     return parsed, f"{parsed.day} {MONTHS[parsed.month - 1]} {parsed.year}"
+
+
+def _card_start_time(card):
+    metadata = card.select_one(".event-card-meta")
+    match = CLOCK_RE.search(metadata.get_text(" ", strip=True)) if metadata else None
+    if match is None:
+        return None
+    return f"{int(match.group(1)):02d}:{match.group(2)}"
+
+
+def _time_text(event_data, visible_start):
+    if not visible_start or not event_data.get("startDate"):
+        return None
+    try:
+        start = datetime.fromisoformat(event_data["startDate"].replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if start.strftime("%H:%M") != visible_start:
+        return None
+
+    value = visible_start
+    try:
+        end = datetime.fromisoformat(event_data["endDate"].replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError):
+        return value
+    if end.date() == start.date() and end > start and end.strftime("%H:%M:%S") != "23:59:59":
+        value += " - " + end.strftime("%H:%M")
+    return value
 
 
 def _city(event_data):
@@ -124,6 +153,8 @@ def fetch_events(stats=None):
             event = {
                 "title": title_element.get_text(" ", strip=True),
                 "date_text": start_text if start == end else f"{start_text} – {end_text}",
+                "time_text": _time_text(event_data, _card_start_time(card)),
+                "description": None,
                 "location": location or "",
                 "city": _city(event_data),
                 "source": "UitGouda",

@@ -1,6 +1,6 @@
 from collector import collect_source_results
 from database import sync_events
-from normalizer import normalize_date
+from normalizer import normalize_event
 
 
 def main():
@@ -8,8 +8,8 @@ def main():
     successful, failed = collect_source_results()
     for source, events in list(successful.items()):
         try:
-            for event in events:
-                event.update(normalize_date(event["date_text"]))
+            successful[source] = [normalize_event(event) for event in events]
+            events = successful[source]
             if any(not event.get("start_date") for event in events):
                 raise ValueError("Een of meer datums konden niet worden genormaliseerd.")
         except Exception as error:

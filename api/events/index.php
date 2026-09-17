@@ -81,7 +81,8 @@ try {
     }
 
     $query =
-        'SELECT id, title, date_text, start_date, end_date, location, city, source, source_url '
+        'SELECT id, title, date_text, start_date, end_date, start_time, end_time, '
+        . 'location, city, source, source_url '
         . 'FROM events WHERE is_active = 1';
     $parameters = [];
 

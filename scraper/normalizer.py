@@ -21,6 +21,11 @@ DATE_PATTERN = (
     r"(?:(?:maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\s+)?"
     r"(\d{1,2})\s+(" + "|".join(MONTHS) + r")(?:\s+(\d{4}))?"
 )
+TIME_PATTERN = re.compile(
+    r"^\s*([01]?\d|2[0-3])[:.]([0-5]\d)(?:\s*(?:uur|u))?"
+    r"(?:\s*(?:-|–|—|tot)\s*([01]?\d|2[0-3])[:.]([0-5]\d)(?:\s*(?:uur|u))?)?\s*$",
+    re.IGNORECASE,
+)
 
 
 def normalize_date(date_text):
@@ -57,3 +62,38 @@ def normalize_date(date_text):
         "start_date": dates[0].isoformat(),
         "end_date": dates[-1].isoformat(),
     }
+
+
+def normalize_time(time_text):
+    if not time_text:
+        return {"start_time": None, "end_time": None}
+
+    match = TIME_PATTERN.fullmatch(str(time_text))
+    if match is None:
+        return {"start_time": None, "end_time": None}
+
+    start_hour, start_minute, end_hour, end_minute = match.groups()
+    result = {"start_time": f"{int(start_hour):02d}:{start_minute}:00", "end_time": None}
+    if end_hour is not None:
+        result["end_time"] = f"{int(end_hour):02d}:{end_minute}:00"
+    return result
+
+
+def normalize_description(description, max_length=2000):
+    if not description:
+        return None
+    value = " ".join(str(description).split())
+    if not value:
+        return None
+    if len(value) <= max_length:
+        return value
+    shortened = value[:max_length + 1].rsplit(" ", 1)[0].rstrip(" ,;:-")
+    return shortened + "…"
+
+
+def normalize_event(event):
+    normalized = dict(event)
+    normalized.update(normalize_date(normalized["date_text"]))
+    normalized.update(normalize_time(normalized.pop("time_text", None)))
+    normalized["description"] = normalize_description(normalized.get("description"))
+    return normalized

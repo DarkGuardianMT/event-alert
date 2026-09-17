@@ -18,7 +18,8 @@ class CategorySyncTests(unittest.TestCase):
         try:
             with closing(connection.cursor(dictionary=True)) as cursor:
                 cursor.execute(
-                    "SELECT id, title, date_text, start_date, end_date, location, city, "
+                    "SELECT id, title, date_text, start_date, end_date, start_time, end_time, "
+                    "description, location, city, "
                     "source, source_url, is_active, last_seen_at FROM events WHERE id = %s",
                     (event_id,),
                 )
@@ -39,7 +40,8 @@ class CategorySyncTests(unittest.TestCase):
     def incoming(stored):
         return {
             key: stored[key] for key in (
-                "title", "date_text", "start_date", "end_date",
+                "title", "date_text", "start_date", "end_date", "start_time", "end_time",
+                "description",
                 "location", "city", "source", "source_url",
             )
         }
@@ -138,6 +140,52 @@ class CategorySyncTests(unittest.TestCase):
         self.assertEqual(after["last_seen_at"], stored["last_seen_at"])
         self.assertEqual(after["is_active"], stored["is_active"])
         self.assertEqual(categories, original_categories)
+
+    def test_duplicate_fills_missing_metadata_without_overwriting(self):
+        title = "Event Alert controlled metadata check"
+        incoming = {
+            "title": title,
+            "date_text": "30 december 2099",
+            "start_date": "2099-12-30",
+            "end_date": "2099-12-30",
+            "start_time": None,
+            "end_time": None,
+            "description": None,
+            "location": "Testlocatie",
+            "city": "Gouda",
+            "source": "Gemeente Gouda",
+            "source_url": "https://example.invalid/metadata",
+        }
+        connection = database.get_connection()
+        try:
+            database.sync_events({"Gemeente Gouda": [incoming]}, connection, deactivate=False)
+            enriched = dict(incoming, start_time="19:30:00", end_time="21:00:00",
+                            description="Betrouwbare beschrijving.")
+            result = database.sync_events({"Gemeente Gouda": [enriched]}, connection, deactivate=False)
+            with closing(connection.cursor(dictionary=True)) as cursor:
+                cursor.execute(
+                    "SELECT start_time, end_time, description FROM events WHERE title = %s",
+                    (title,),
+                )
+                stored = cursor.fetchone()
+            self.assertEqual(result["skipped"], 1)
+            self.assertEqual(str(stored["start_time"]), "19:30:00")
+            self.assertEqual(str(stored["end_time"]), "21:00:00")
+            self.assertEqual(stored["description"], "Betrouwbare beschrijving.")
+
+            conflicting = dict(enriched, start_time="20:00:00", end_time="22:00:00",
+                               description="Tegenstrijdige beschrijving.")
+            database.sync_events({"Gemeente Gouda": [conflicting]}, connection, deactivate=False)
+            with closing(connection.cursor(dictionary=True)) as cursor:
+                cursor.execute(
+                    "SELECT start_time, end_time, description FROM events WHERE title = %s",
+                    (title,),
+                )
+                unchanged = cursor.fetchone()
+            self.assertEqual(unchanged, stored)
+        finally:
+            connection.rollback()
+            connection.close()
 
 
 if __name__ == "__main__":

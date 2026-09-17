@@ -561,6 +561,25 @@ a {
   overflow-wrap: anywhere;
 }
 
+.detail-description {
+  margin-top: 34px;
+  padding-top: 27px;
+  border-top: 1px solid var(--line);
+}
+
+.detail-description h2 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  letter-spacing: -0.025em;
+}
+
+.detail-description p {
+  margin: 0;
+  color: #40554b;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
 .detail-footer {
   margin-top: 37px;
   padding-top: 24px;

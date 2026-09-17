@@ -56,9 +56,20 @@ def fetch_events(stats=None):
 
                 location_element = sessions[0].select_one(".location")
                 location = location_element.get_text(" ", strip=True).lstrip("–—- ") if location_element else ""
+                session_text = sessions[0].get_text(" ", strip=True)
+                time_match = re.search(r"-\s*([01]?\d|2[0-3])[:.]([0-5]\d)\b", session_text)
+                description_element = detail.select_one(".region-content .field--name-body")
                 event = {
                     "title": title_link.get_text(" ", strip=True),
                     "date_text": _date_text(date_element["datetime"]),
+                    "time_text": (
+                        f"{int(time_match.group(1)):02d}:{time_match.group(2)}"
+                        if time_match else None
+                    ),
+                    "description": (
+                        description_element.get_text(" ", strip=True)
+                        if description_element else None
+                    ),
                     "location": location,
                     "city": "Gouda",
                     "source": "Volksuniversiteit Gouda",

@@ -28,7 +28,8 @@ try {
 
     $database = eventAlertDatabase();
     $statement = $database->prepare(
-        'SELECT id, title, date_text, start_date, end_date, location, city, source, source_url '
+        'SELECT id, title, date_text, start_date, end_date, start_time, end_time, description, '
+        . 'location, city, source, source_url '
         . 'FROM events WHERE id = :id AND is_active = 1'
     );
     $statement->bindValue(':id', $id, PDO::PARAM_INT);

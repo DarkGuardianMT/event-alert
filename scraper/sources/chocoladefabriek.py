@@ -19,6 +19,7 @@ DATE_RE = re.compile(
     r"(\d{1,2})\s+(" + "|".join(MONTHS) + r")\s+(\d{4})",
     re.IGNORECASE,
 )
+CLOCK_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3])[:.]([0-5]\d)(?!\d)")
 
 
 def _get_page(session, url, counts):
@@ -40,14 +41,27 @@ def _event_date(heading):
     label = heading.find_previous_sibling("p")
     if label is None:
         return None
-    match = DATE_RE.search(label.get_text(" ", strip=True))
+    label_text = label.get_text(" ", strip=True)
+    match = DATE_RE.search(label_text)
     if match is None:
         return None
     try:
         event_date = date(int(match.group(3)), MONTHS[match.group(2).lower()], int(match.group(1)))
     except ValueError:
         return None
-    return match.group(0).lower(), event_date
+    time_match = CLOCK_RE.search(label_text)
+    time_text = (
+        f"{int(time_match.group(1)):02d}:{time_match.group(2)}" if time_match else None
+    )
+    return match.group(0).lower(), event_date, time_text
+
+
+def _description(detail):
+    heading = detail.find("h1")
+    header = heading.find_parent("header") if heading else None
+    content = header.find_next_sibling("div") if header else None
+    body = content.select_one("div.flex-1") if content else None
+    return body.get_text(" ", strip=True) if body else None
 
 
 def _location(detail):
@@ -114,7 +128,7 @@ def fetch_events(stats=None):
             parsed_date = _event_date(heading)
             if parsed_date is None:
                 raise ValueError(f"Chocoladefabriek-item mist expliciete datum: {detail_url}")
-            date_text, event_date = parsed_date
+            date_text, event_date, time_text = parsed_date
             if event_date <= date.today():
                 continue
             location = _location(detail)
@@ -134,6 +148,8 @@ def fetch_events(stats=None):
             events.append({
                 "title": title,
                 "date_text": date_text,
+                "time_text": time_text,
+                "description": _description(detail),
                 "location": location,
                 "city": "Gouda",
                 "source": SOURCE,

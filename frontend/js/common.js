@@ -54,11 +54,30 @@ window.EventAlertUI = (() => {
     return date;
   }
 
-  function formatEventDate(startValue, endValue, language) {
+  function formatApiTime(value) {
+    if (typeof value !== 'string') {
+      return '';
+    }
+    return /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value) ? value.slice(0, 5) : '';
+  }
+
+  function formatEventTime(startValue, endValue) {
+    const start = formatApiTime(startValue);
+    if (!start) {
+      return '';
+    }
+    const end = formatApiTime(endValue);
+    return end ? `${start}–${end}` : start;
+  }
+
+  function formatEventDate(startValue, endValue, language, startTimeValue, endTimeValue) {
     const start = parseApiDate(startValue);
     if (!start) {
       return '';
     }
+
+    const time = formatEventTime(startTimeValue, endTimeValue);
+    const withTime = (dateLabel) => time ? `${dateLabel} · ${time}` : dateLabel;
 
     const end = parseApiDate(endValue);
     const startDay = start.getUTCDate();
@@ -66,7 +85,7 @@ window.EventAlertUI = (() => {
     const startYear = start.getUTCFullYear();
 
     if (!end || end <= start) {
-      return `${startDay} ${startMonth} ${startYear}`;
+      return withTime(`${startDay} ${startMonth} ${startYear}`);
     }
 
     const endDay = end.getUTCDate();
@@ -74,12 +93,12 @@ window.EventAlertUI = (() => {
     const endYear = end.getUTCFullYear();
 
     if (startYear === endYear && start.getUTCMonth() === end.getUTCMonth()) {
-      return `${startDay} – ${endDay} ${startMonth} ${startYear}`;
+      return withTime(`${startDay} – ${endDay} ${startMonth} ${startYear}`);
     }
     if (startYear === endYear) {
-      return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${startYear}`;
+      return withTime(`${startDay} ${startMonth} – ${endDay} ${endMonth} ${startYear}`);
     }
-    return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
+    return withTime(`${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`);
   }
 
   function safeSourceUrl(value) {
@@ -116,6 +135,7 @@ window.EventAlertUI = (() => {
     saveLanguage,
     applyTranslations,
     formatEventDate,
+    formatEventTime,
     safeSourceUrl,
     createCategoryChips,
   };

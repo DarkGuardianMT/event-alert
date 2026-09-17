@@ -141,9 +141,17 @@ function createEventCard(event) {
   const date = document.createElement('time');
   date.className = 'event-date';
   if (event.start_date) {
-    date.dateTime = event.start_date;
+    date.dateTime = event.start_time
+      ? `${event.start_date}T${event.start_time}`
+      : event.start_date;
   }
-  date.textContent = ui.formatEventDate(event.start_date, event.end_date, currentLanguage) || event.date_text || text.missingDate;
+  date.textContent = ui.formatEventDate(
+    event.start_date,
+    event.end_date,
+    currentLanguage,
+    event.start_time,
+    event.end_time
+  ) || event.date_text || text.missingDate;
   card.append(date);
 
   const title = document.createElement('h3');

@@ -20,6 +20,7 @@ DATE_RE = re.compile(
     r"(\d{1,2})\s+(" + "|".join(MONTHS) + r")(?:\s+(\d{4}))?",
     re.IGNORECASE,
 )
+CLOCK_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3])[:.]([0-5]\d)(?!\d)")
 UNRELIABLE_SCHEDULES = {
     "/buurtsport-12-": "Schoolvakanties en feestdagen worden overgeslagen; exacte datums ontbreken.",
     "/buurtsport-12-voor-jongens": "Schoolvakanties en feestdagen worden overgeslagen; exacte datums ontbreken.",
@@ -67,7 +68,8 @@ def _date_text(event_date):
     return f"{event_date.day} {month_name} {event_date.year}"
 
 
-def _add(events, seen, counts, title, event_date, location, url, kind):
+def _add(events, seen, counts, title, event_date, location, url, kind,
+         time_text=None, description=None):
     counts["raw_candidate_activities"] += 1
     if event_date <= date.today() or not title or not location:
         return
@@ -79,6 +81,8 @@ def _add(events, seen, counts, title, event_date, location, url, kind):
     events.append({
         "title": title,
         "date_text": _date_text(event_date),
+        "time_text": time_text,
+        "description": description,
         "location": location,
         "city": "Gouda",
         "source": SOURCE,
@@ -95,6 +99,16 @@ def _girls_occurrences(soup, events, seen, counts):
     if location_match is None:
         raise ValueError("SPORT•GOUDA meidenpagina mist de locatie.")
     location = location_match.group(1)
+    leaf_paragraphs = [
+        p.get_text(" ", strip=True) for p in main.find_all("p") if not p.find("p")
+    ]
+    schedule_text = next((text for text in leaf_paragraphs if "Tijd:" in text), "")
+    time_text = _single_time_text(schedule_text)
+    description_parts = []
+    for text in leaf_paragraphs:
+        if text.startswith(("Ben jij", "Samenwerken")) and text not in description_parts:
+            description_parts.append(text)
+    description = " ".join(description_parts) or None
     date_paragraphs = [
         p.get_text(" ", strip=True) for p in main.find_all("p")
         if not p.find("p") and (
@@ -113,7 +127,7 @@ def _girls_occurrences(soup, events, seen, counts):
             except ValueError:
                 continue
             _add(events, seen, counts, "Buurtsport 12+ voor meiden", event_date,
-                 location, GIRLS_URL, "recurring")
+                 location, GIRLS_URL, "recurring", time_text, description)
 
 
 def _published_date(soup):
@@ -133,6 +147,26 @@ def _section_location(section):
 def _is_gouda_location(location):
     lower = location.casefold()
     return "gouda" in lower or any(venue in lower for venue in GOUDA_VENUES)
+
+
+def _single_time_text(text):
+    clock_matches = list(CLOCK_RE.finditer(text))
+    matches = [f"{int(match.group(1)):02d}:{match.group(2)}" for match in clock_matches]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) == 2:
+        separator = text[clock_matches[0].end():clock_matches[1].start()].casefold()
+        if re.search(r"(?:-|–|—|\btot\b|\ben\b)", separator):
+            return f"{matches[0]} - {matches[1]}"
+    return None
+
+
+def _section_time_text(section):
+    labels = [
+        node.get_text(" ", strip=True) for node in section.find_all(["li", "p"])
+        if re.match(r"Tijd(?:en)?:", node.get_text(" ", strip=True), re.IGNORECASE)
+    ]
+    return _single_time_text(labels[0]) if len(labels) == 1 else None
 
 
 def _news_occurrences(soup, url, events, seen, counts):
@@ -156,7 +190,8 @@ def _news_occurrences(soup, url, events, seen, counts):
         if event_date and location and _is_gouda_location(location):
             if "wereld-alzheimer-dag" in url and title.casefold() == "vitaal 55+":
                 title = "Vitaal 55+ (Wereld Alzheimer Dag)"
-            _add(events, seen, counts, title, event_date, location, url, "one_off")
+            _add(events, seen, counts, title, event_date, location, url, "one_off",
+                 _section_time_text(heading.parent))
 
     # Sommige nieuwsartikelen tonen per buurt een gedateerde lijst in plaats van kopjes.
     if "valbus" not in main.get_text(" ", strip=True).casefold():
