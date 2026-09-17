@@ -89,6 +89,50 @@ class CategorizerTests(unittest.TestCase):
         self.assertEqual(classify(event), {"community"})
         self.assertEqual(event, original)
 
+    def test_gouda_bruist_quality_rules(self):
+        examples = (
+            ({"title": "Warme maaltijd zoals thuis"}, {"community"}),
+            ({"title": "Open Coffee Gouda"}, {"community"}),
+            ({"title": "Ontmoetingscafe in de Chocoladefabriek"}, {"community"}),
+            ({"title": "5-daagse Cursus Fotografie"}, {"culture", "workshop"}),
+            ({
+                "title": "Herfstvakantie activiteit: fotografieworkshop voor ouder en kind",
+            }, {"culture", "kids_family", "workshop"}),
+            ({"title": "Textielfestijn Draden van Verbeelding"}, {"exhibition"}),
+            ({
+                "title": "Waarheidsgetrouwe en andere beelden die verbazen",
+                "description": "Op zondag wordt de expositie Als je van beelden houdt geopend.",
+            }, {"exhibition"}),
+        )
+        for event, expected in examples:
+            with self.subTest(title=event["title"]):
+                self.assertEqual(classify(event), expected)
+
+    def test_gouda_bruist_rules_avoid_false_positives(self):
+        examples = (
+            "Kom helpen bij de appel- en perenpluk",
+            "Open dag bij de koffiebranderij",
+            "Cursus verkeersregels",
+            "Samen eten we gezonder",
+        )
+        for title in examples:
+            with self.subTest(title=title):
+                self.assertEqual(classify({"title": title}), {"other"})
+        self.assertEqual(
+            classify({
+                "title": "Henri Matisse",
+                "description": "Musea maken tentoonstellingen met werken uit hun collectie.",
+            }),
+            {"other"},
+        )
+        self.assertEqual(
+            classify({
+                "title": "Netwerkbijeenkomst",
+                "description": "Er is koffie tijdens de open bijeenkomst.",
+            }),
+            {"other"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

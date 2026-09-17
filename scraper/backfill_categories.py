@@ -20,7 +20,7 @@ EXAMPLE_TITLES = (
 def stored_events(connection):
     with closing(connection.cursor(dictionary=True)) as cursor:
         cursor.execute(
-            "SELECT id, title, date_text, start_date, end_date, location, city, "
+            "SELECT id, title, date_text, start_date, end_date, description, location, city, "
             "source, source_url, is_active FROM events ORDER BY id"
         )
         return cursor.fetchall()

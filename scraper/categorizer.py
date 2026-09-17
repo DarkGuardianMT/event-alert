@@ -19,7 +19,8 @@ def _text(value):
 
 COMMUNITY = re.compile(
     r"\b(?:buurt\w*|wijk\w*|bewoner\w*|taalcaf(?:é|e)|talencaf(?:é|e)|"
-    r"leesclub|inloop|straatfeest|zomerwijkfeest|zomerfeest|openingsfestijn|"
+    r"leesclub|inloop|ontmoetingscaf(?:é|e)|warme maaltijd|open coffee|"
+    r"straatfeest|zomerwijkfeest|zomerfeest|openingsfestijn|"
     r"burendag|veteranendag|oktoberfest|pubquiz|popquiz|vrijmibo|"
     r"karaoke|disco|pride night|kermis|bbq)\b"
 )
@@ -36,7 +37,8 @@ SPORT_WITH_SOURCE = re.compile(r"\b(?:stap mee|valbus|valpreventie\w*)\b")
 KIDS = re.compile(
     r"\b(?:kinder\w*|kinderen|peuter\w*|kleuter\w*|familie\w*|"
     r"family|gezins\w*|jeugd\w*|jongeren|kidsrun|sinterklaas\w*|"
-    r"pakjesboot\w*|kleintjes|jongerenkoor\w*)\b"
+    r"pakjesboot\w*|kleintjes|jongerenkoor\w*|"
+    r"ouder\s*(?:&|en)\s*kind)\b"
 )
 CHILD_AGE = re.compile(r"\b\d{1,2}\s+(?:tot|t/m|-)\s+\d{1,2}\s+jaar\b")
 YOUTH_CONTEXT = re.compile(r"\b(?:buurtsport|jeugd\w*|jongeren|meiden|jongens)\b")
@@ -48,7 +50,7 @@ CULTURE = re.compile(
     r"meezingconcert|kerstconcert|adventsconcert|musical|koor\w*|"
     r"orgel\w*|piano\w*|karaoke|tribute\w*|rock\w*|band|bands|"
     r"songbook|candlelight|disco|dans\w*|ballet|opera\w*|"
-    r"cabaret|comedy|schrijver\w*|stadsdichter|bibliotheek|"
+    r"cabaret|comedy|fotografi\w*|schrijver\w*|stadsdichter|bibliotheek|"
     r"stadsbibliotheek|djembé|djembe|dinnershow)\b"
 )
 EXPLICIT_PERFORMANCE = re.compile(
@@ -62,7 +64,9 @@ MUSIC_GENRE = re.compile(r"\b(?:metalcore|thrash metal|alternative metal)\b")
 KNOWN_CULTURAL_ACTIVITY = re.compile(
     r"\b(?:festival (?:de )?verwondering|verweven verhalen|gouda bij kaarslicht)\b"
 )
-WORKSHOP = re.compile(r"\b(?:workshop|praktijkles|masterclass)\b")
+WORKSHOP = re.compile(
+    r"\b(?:workshop|fotografieworkshop|cursus fotografie|praktijkles|masterclass)\b"
+)
 PRACTICAL_LESSON = re.compile(
     r"\b(?:snijtechnieken|sieraad maken|tekenen|schilderen|borduren|"
     r"snoeien|handwerken)\b"
@@ -74,6 +78,10 @@ MARKET = re.compile(
     r"kaasmarkt|boekenmarkt|kunstmarkt|wintermarkt)\b"
 )
 EXHIBITION = re.compile(r"\b(?:expositie\w*|tentoonstelling\w*|exhibition\w*)\b")
+TEXTILE_EXHIBITION = re.compile(r"\btextielfestijn\b")
+DESCRIPTION_EXHIBITION_OPENING = re.compile(
+    r"\b(?:de|een) expositie\b.{0,100}\bgeopend\b"
+)
 VOLKSUNIVERSITEIT_CULTURE_URL = re.compile(
     r"\Ahttps?://(?:www\.)?volksuniversiteitgouda\.nl/kunst-cultuur(?:[/?#]|\Z)"
 )
@@ -88,6 +96,7 @@ def classify(event) -> set[str]:
     source = _text(event.get("source"))
     location = _text(event.get("location"))
     source_url = _text(event.get("source_url"))
+    description = _text(event.get("description"))
     categories = set()
 
     if COMMUNITY.search(title) or KNOWN_COMMUNITY_ACTIVITY.search(title):
@@ -127,7 +136,11 @@ def classify(event) -> set[str]:
         categories.add("lecture")
     if MARKET.search(title):
         categories.add("market")
-    if EXHIBITION.search(title):
+    if (
+        EXHIBITION.search(title)
+        or TEXTILE_EXHIBITION.search(title)
+        or DESCRIPTION_EXHIBITION_OPENING.search(description)
+    ):
         categories.add("exhibition")
 
     return categories or {"other"}
