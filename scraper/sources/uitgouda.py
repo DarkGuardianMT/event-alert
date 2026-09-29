@@ -104,7 +104,10 @@ def _city(event_data):
 
 
 def fetch_events(stats=None):
-    counts = {"raw_cards": 0, "listing_dates": 0, "detail_dates": 0, "duplicates": 0}
+    counts = {
+        "raw_cards": 0, "listing_dates": 0, "detail_dates": 0,
+        "duplicates": 0, "excluded_missing_city": 0,
+    }
     events = []
     seen = set()
     details = {}
@@ -160,6 +163,10 @@ def fetch_events(stats=None):
                 "source": "UitGouda",
                 "source_url": url,
             }
+            if not event["city"]:
+                # Zonder bevestigde plaats kan dit evenement niet veilig worden opgeslagen.
+                counts["excluded_missing_city"] += 1
+                continue
             fingerprint = tuple(event.values())
             if fingerprint in seen:
                 counts["duplicates"] += 1
