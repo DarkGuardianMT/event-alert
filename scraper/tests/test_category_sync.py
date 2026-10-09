@@ -7,8 +7,10 @@ import database
 
 
 @unittest.skipUnless(
-    os.environ.get("EVENT_ALERT_DB_NAME") and os.environ.get("EVENT_ALERT_DB_USER"),
-    "Een lokale Event Alert-testdatabase is vereist.",
+    os.environ.get("EVENT_ALERT_RUN_DB_TESTS") == "1"
+    and os.environ.get("EVENT_ALERT_DB_NAME")
+    and os.environ.get("EVENT_ALERT_DB_USER"),
+    "Database-tests vereisen expliciete toestemming en een aparte testdatabase.",
 )
 class CategorySyncTests(unittest.TestCase):
     def stored(self, event_id, connection=None):

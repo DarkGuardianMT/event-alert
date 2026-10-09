@@ -14,6 +14,32 @@ htmlcov/
 
 *.log
 
+# Houd lokale gegevens en configuratie buiten versiebeheer.
+/logs/
+/backups/
+/exports/
+/data/
+/scraper/data/
+/scraper/cache/
+*.sql
+!database/schema.sql
+!database/migrations/*.sql
+*.dump
+*.sql.gz
+*.bak
+*.csv
+*.tsv
+*.jsonl
+*.sqlite
+*.sqlite3
+*.db
+*.local.php
+*.local.py
+*.local.ini
+*.local.json
+cookies.txt
+sessions/
+
 .DS_Store
 Thumbs.db
 
