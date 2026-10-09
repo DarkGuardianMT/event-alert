@@ -3,8 +3,9 @@ import re
 from datetime import date, datetime
 from urllib.parse import urljoin, urldefrag
 
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import SourceSession
 
 
 SOURCE_URL = "https://uitgouda.com/events/"
@@ -112,7 +113,7 @@ def fetch_events(stats=None):
     seen = set()
     details = {}
 
-    with requests.Session() as session:
+    with SourceSession(SOURCE_URL) as session:
         response = session.get(SOURCE_URL, timeout=30)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")

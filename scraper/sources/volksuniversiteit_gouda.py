@@ -2,8 +2,9 @@ import re
 from datetime import datetime
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import SourceSession
 
 
 SOURCE_URL = "https://www.volksuniversiteitgouda.nl/agenda"
@@ -25,7 +26,7 @@ def fetch_events(stats=None):
     visited_pages = set()
     page_url = SOURCE_URL
 
-    with requests.Session() as session:
+    with SourceSession(SOURCE_URL) as session:
         while page_url and page_url not in visited_pages:
             visited_pages.add(page_url)
             response = session.get(page_url, timeout=30)

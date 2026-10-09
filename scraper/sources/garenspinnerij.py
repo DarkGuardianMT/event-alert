@@ -1,7 +1,8 @@
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import get_source_page
 
 
 SOURCE_URL = "https://cultuurhuisgarenspinnerij.nl/kalender/"
@@ -16,7 +17,7 @@ def fetch_events():
 
     while page_url and page_url not in visited_pages:
         visited_pages.add(page_url)
-        response = requests.get(page_url, timeout=30)
+        response = get_source_page(SOURCE_URL, page_url, timeout=30)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
         agenda = soup.select_one("main .w-grid.us_post_list")

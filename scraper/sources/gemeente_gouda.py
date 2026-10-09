@@ -1,12 +1,13 @@
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import get_source_page
 
 
 SOURCE_URL = "https://www.gouda.nl/evenementenkalender/"
 
 
 def fetch_events():
-    response = requests.get(SOURCE_URL, timeout=30)
+    response = get_source_page(SOURCE_URL, SOURCE_URL, timeout=30)
     response.raise_for_status()
     soup = BeautifulSoup(response.content, "html.parser")
     events = []

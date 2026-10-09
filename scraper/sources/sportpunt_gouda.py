@@ -2,8 +2,9 @@ import re
 from datetime import date
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import SourceSession
 
 
 BASE_URL = "https://www.sportpuntgouda.nl"
@@ -225,7 +226,7 @@ def fetch_events(stats=None):
     excluded = []
     events = []
     seen = set()
-    with requests.Session() as session:
+    with SourceSession(BASE_URL) as session:
         _girls_occurrences(_page(session, GIRLS_URL, counts), events, seen, counts)
         for path, reason in UNRELIABLE_SCHEDULES.items():
             url = urljoin(BASE_URL, path)

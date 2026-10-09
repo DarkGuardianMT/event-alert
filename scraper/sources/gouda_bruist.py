@@ -3,8 +3,9 @@ from collections import defaultdict
 from datetime import date, time
 from urllib.parse import parse_qs, urljoin, urlparse
 
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import SourceSession
 
 
 BASE_URL = "https://goudabruist.nl"
@@ -451,7 +452,7 @@ def fetch_events(stats=None):
         "suspicious_time_ranges": 0,
         "final_event_occurrences": 0,
     }
-    with requests.Session() as session:
+    with SourceSession(BASE_URL) as session:
         session.headers.update({"User-Agent": USER_AGENT})
         cards = _listing_cards(session, counts)
         details = _details_by_activity(session, cards, counts)

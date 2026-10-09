@@ -31,7 +31,7 @@ class UitGoudaTests(unittest.TestCase):
         )
         html = f'<script type="application/ld+json">{json.dumps(events)}</script>{cards}'
 
-        with patch.object(uitgouda.requests, "Session") as session:
+        with patch.object(uitgouda, "SourceSession") as session:
             session.return_value.__enter__.return_value.get.return_value.content = html.encode()
             stats = {}
             result = uitgouda.fetch_events(stats)

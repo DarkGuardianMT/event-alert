@@ -2,8 +2,9 @@ import re
 from datetime import date
 from urllib.parse import urljoin, urlsplit
 
-import requests
 from bs4 import BeautifulSoup
+
+from sources.http import SourceSession
 
 
 BASE_URL = "https://chocoladefabriekgouda.nl/"
@@ -105,7 +106,7 @@ def fetch_events(stats=None):
     seen_events = set()
     seen_title_dates = {}
 
-    with requests.Session() as session:
+    with SourceSession(BASE_URL) as session:
         detail_urls = []
         for page in (BASE_URL, AGENDA_URL):
             page_url, soup = _get_page(session, page, counts)
